@@ -24,6 +24,7 @@
 #include "AliMCEvent.h"
 #include "AliESDtrackCuts.h"
 #include "AliGenCocktailEventHeader.h"
+#include "AliAnalysisUtils.h"
 #include "AliLog.h"
 
 /// \cond CLASSIMP
@@ -127,8 +128,38 @@ void AliCaloTrackESDReader::Init()
 {  
   AliCaloTrackReader::Init();
   
-  if(!fESDtrackCuts)
-    fESDtrackCuts = AliESDtrackCuts::GetStandardTPCOnlyTrackCuts(); //initialize with TPC only tracks
+  // Do not initialize anymore to allow selection just by track status
+//  if(!fESDtrackCuts)
+//    fESDtrackCuts = AliESDtrackCuts::GetStandardTPCOnlyTrackCuts(); //TPC only tracks
+}
+
+//________________________________
+/// Check if MC particle is from a pile-up event out of bunch
+/// https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsPileup#Pileup_in_Monte_Carlo_simulation
+//________________________________
+Bool_t AliCaloTrackESDReader::IsMCParticleFromOutOfBunchPileupCollision(Int_t index) const
+{
+  return AliAnalysisUtils::IsParticleFromOutOfBunchPileupCollision(index, GetMC());
+}
+
+//________________________________
+/// Check if MC event is from a pile-up event
+/// Pass the pile-up generator name in case of added signals MC
+/// https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsPileup#Pileup_in_Monte_Carlo_simulation
+//________________________________
+Bool_t AliCaloTrackESDReader::IsPileupInGeneratedMCEvent(TString genname) const
+{
+  return AliAnalysisUtils::IsPileupInGeneratedEvent(GetMC(),genname);
+}
+
+//________________________________
+/// Check if MC event is from a same bunch pile-up event
+/// Pass the pile-up generator name in case of added signals MC
+/// https://twiki.cern.ch/twiki/bin/view/ALICE/AliDPGtoolsPileup#Pileup_in_Monte_Carlo_simulation
+//________________________________
+Bool_t AliCaloTrackESDReader::IsSameBunchPileupInGeneratedMCEvent(TString genname) const
+{
+  return AliAnalysisUtils::IsSameBunchPileupInGeneratedEvent(GetMC(),genname);
 }
 
 //______________________________________________________________________________
@@ -139,15 +170,17 @@ Bool_t AliCaloTrackESDReader::SelectTrack(AliVTrack* track, Double_t pTrack[3])
 {  
   AliESDtrack* esdTrack = dynamic_cast<AliESDtrack*> (track);
   
-  if(!esdTrack) return kFALSE;
+  if ( !esdTrack )      return kFALSE;
+  
+  track->GetPxPyPz(pTrack) ;
+
+  if ( !fESDtrackCuts ) return kTRUE; // Since not defined, do no rely on predefined track-cuts
   
   const AliExternalTrackParam* constrainParam = esdTrack->GetConstrainedParam();
   
-  if(fESDtrackCuts->AcceptTrack(esdTrack))
-  {
-    track->GetPxPyPz(pTrack) ;
-    
-    if(fConstrainTrack)
+  if ( fESDtrackCuts->AcceptTrack(esdTrack) )
+  {    
+    if ( fConstrainTrack )
     {
       if( !constrainParam ) return kFALSE;
       
@@ -156,7 +189,7 @@ Bool_t AliCaloTrackESDReader::SelectTrack(AliVTrack* track, Double_t pTrack[3])
       
     } // use constrained tracks
     
-    if(fSelectSPDHitTracks && !esdTrack->HasPointOnITSLayer(0) && !esdTrack->HasPointOnITSLayer(1))
+    if ( fSelectSPDHitTracks && !esdTrack->HasPointOnITSLayer(0) && !esdTrack->HasPointOnITSLayer(1) )
       return kFALSE ; // Not much sense to use with TPC only or Hybrid tracks
   }
   
@@ -164,11 +197,10 @@ Bool_t AliCaloTrackESDReader::SelectTrack(AliVTrack* track, Double_t pTrack[3])
   else if(fESDtrackComplementaryCuts && fESDtrackComplementaryCuts->AcceptTrack(esdTrack))
   {
     // constrain the track
-    if( !constrainParam ) return kFALSE;
+    if ( !constrainParam ) return kFALSE;
     
     esdTrack->Set(constrainParam->GetX(),constrainParam->GetAlpha(),constrainParam->GetParameter(),constrainParam->GetCovariance());
     esdTrack->GetConstrainedPxPyPz(pTrack);
-    
   }
   else return kFALSE;
   

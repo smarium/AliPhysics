@@ -107,6 +107,8 @@ public:
   
   static const Int_t fgkNmcTypes = 10;    ///< Number of MC trigger particles checked when filling MC histograms
   
+  void         SetMCGenType(Int_t min = 0, Int_t max = 6) { if(min >= 0 && min < fgkNmcTypes) fMCGenTypeMin = min ;
+    if(max >= 0 && max < fgkNmcTypes) fMCGenTypeMax = max ; }
   
   Bool_t       IsTriggerTheEventLeadingParticle();
   
@@ -204,6 +206,9 @@ public:
   
   void         SwitchOnFillBradHistograms()      { fFillBradHisto       = kTRUE  ; }
   void         SwitchOffFillBradHistograms()     { fFillBradHisto       = kFALSE ; }
+ 
+  void         SwitchOnFillDeltaEtaPhiPtTrigHistograms()  { fFillDeltaPhiDeltaEtaAssocPt = kTRUE  ; }
+  void         SwitchOffFillDeltaEtaPhiPtTrigHistograms() { fFillDeltaPhiDeltaEtaAssocPt = kFALSE ; }
   
   Bool_t       OnlyIsolated()              const { return fSelectIsolated        ; }
   void         SelectIsolated(Bool_t s)          { fSelectIsolated   = s         ; }
@@ -214,6 +219,9 @@ public:
   
   void         SetNAssocPtBins(Int_t n) ;
   void         SetAssocPtBinLimit(Int_t ibin, Float_t pt) ;
+  
+  void         SetNTriggerPtBins(Int_t n) ;
+  void         SetTriggerPtBinLimit(Int_t ibin, Float_t pt) ;
   
   Bool_t       IsMixStoredInReaderOn()     const { return fUseMixStoredInReader  ; }
   void         SwitchOnUseMixStoredInReader()    { fUseMixStoredInReader = kTRUE ; }
@@ -245,8 +253,17 @@ public:
   void         SwitchOnFillHistogramsPerTCardIndex()  { fFillPerTCardIndexHistograms = kTRUE  ; }
   void         SwitchOffFillHistogramsPerTCardIndex() { fFillPerTCardIndexHistograms = kFALSE ; }  
   
-  void         SetMCGenType(Int_t min = 0, Int_t max = 6) { if(min >= 0 && min < fgkNmcTypes) fMCGenTypeMin = min ;
-    if(max >= 0 && max < fgkNmcTypes) fMCGenTypeMax = max ; }
+  void         SwitchOnFillHistogramsUePart()    { fFillUePartHistograms = kTRUE  ; }
+  void         SwitchOffFillHistogramsUePart()   { fFillUePartHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillXEHistograms()        { fFillXEHistograms = kTRUE  ; }
+  void         SwitchOffFillXEHistograms()       { fFillXEHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillZTHistograms()        { fFillZTHistograms = kTRUE  ; }
+  void         SwitchOffFillZTHistograms()       { fFillZTHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillHBPHistograms()       { fFillHBPHistograms = kTRUE  ; }
+  void         SwitchOffFillHBPHistograms()      { fFillHBPHistograms = kFALSE ; }  
   
 private:
   
@@ -285,6 +302,8 @@ private:
   Int_t        fNBkgBin;                                 ///<  Number of bins on pt content in cone.
   Float_t      fBkgBinLimit[20];                         ///<  Pt bin limits on pt content in the cone.
   
+  //
+
   Bool_t       fMakeAbsoluteLeading ;                    ///<  Requesting absolute leading triggers.
   Bool_t       fMakeNearSideLeading ;                    ///<  Requesting near side leading (+-90º from trigger particle) triggers.
   
@@ -293,10 +312,12 @@ private:
   Bool_t       fHMPIDCorrelation    ;                    ///<  Correlate with particles on HMPID or its acceptance.
   
   Bool_t       fFillBradHisto ;                          ///<  DPhi histograms calculated differently.
-  
+  Bool_t       fFillDeltaPhiDeltaEtaAssocPt;             ///<  In angular correlation fill histograms with TH3 Delta Eta vs Delta Phi vs Trigger pT for different associated pT bins, and do not fill other histograms to reduce output size.
   Int_t        fNAssocPtBins ;                           ///<  Number of associated pT bins under study.
-  
   Float_t      fAssocPtBinLimit[20] ;                    ///<  Associated pT under study.
+  
+  Int_t        fNTrigPtBins ;                            ///<  Number of bins for deltaEta-deltaPhi histogram.
+  Float_t      fTrigPtBinLimit[20] ;                     ///<  Trigger pT bins for deltaEta-deltaPhi histogram.
   
   Bool_t       fCorrelVzBin ;                            ///<  Fill one histogram per vz bin.
   
@@ -337,8 +358,13 @@ private:
   Int_t        fTCardIndex;                              ///<  Store here the T-Card index per trigger cluster.
   
   Bool_t       fFillTaggedDecayHistograms;               ///<  Fill pT in cone distributions in background bins for decay particles.
-    
+     
   Float_t      fDecayTagsM02Cut;                         ///<  Lambda0 cut for decay particles.
+  
+  Bool_t       fFillUePartHistograms;                    ///< Fill UePart histograms
+  Bool_t       fFillXEHistograms;                        ///< Fill xE histograms
+  Bool_t       fFillZTHistograms;                        ///< Fill zT histograms
+  Bool_t       fFillHBPHistograms;                       ///< Fill hump back plateau histograms
   
   Int_t        fMCGenTypeMin;                            ///<  Of the fgkNmcTypes possible types, select those between fMCGenTypeMin and fMCGenTypeMax.
   Int_t        fMCGenTypeMax;                            ///<  Of the fgkNmcTypes possible types, select those between fMCGenTypeMin and fMCGenTypeMax.
@@ -498,7 +524,7 @@ private:
   TH2F *       fhAssocPtBkg;                             //!<! Trigger pT vs associated pT for background.
   
   /// Difference of charged particle phi and trigger particle  phi as function eta difference, for different associated bins.
-  TH2F **      fhDeltaPhiDeltaEtaAssocPtBin;             //![fNAssocPtBins*GetNZvertBin()]
+  TH3F **      fhDeltaPhiDeltaEtaAssocPtBin;             //![fNAssocPtBins*GetNZvertBin()]
   
   /// Trigger pT vs dPhi for different associated pt and vz bins.
   TH2F **      fhDeltaPhiAssocPtBin;                     //![fNAssocPtBins*GetNZvertBin()]
@@ -625,7 +651,7 @@ private:
   TH2F **      fhMixDeltaPhiChargedAssocPtBinDEta0;      //![fNAssocPtBins*GetNZvertBin()]
   
   /// Difference of charged particle phi and trigger particle  phi as function eta difference, for different associated bins.
-  TH2F **      fhMixDeltaPhiDeltaEtaChargedAssocPtBin;   //![fNAssocPtBins*GetNZvertBin()]
+  TH3F **      fhMixDeltaPhiDeltaEtaChargedAssocPtBin;   //![fNAssocPtBins*GetNZvertBin()]
   
   TH1I *       fhEventBin;                               //!<! Number of triggers in a particular event bin (cen,vz,rp).
   TH1I *       fhEventMixBin;                            //!<! Number of triggers mixed in a particular bin (cen,vz,rp).
@@ -679,7 +705,7 @@ private:
   AliAnaParticleHadronCorrelation & operator = (const AliAnaParticleHadronCorrelation & ph) ;
   
   /// \cond CLASSIMP
-  ClassDef(AliAnaParticleHadronCorrelation,37) ;
+  ClassDef(AliAnaParticleHadronCorrelation,38) ;
   /// \endcond
   
 } ;

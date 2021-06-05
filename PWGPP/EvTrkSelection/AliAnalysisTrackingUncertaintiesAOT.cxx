@@ -44,7 +44,6 @@
 #include "AliMCEventHandler.h"
 #include "AliMCEvent.h"
 #include "AliMultSelection.h"
-#include "AliStack.h"
 #include "AliLog.h"
 //
 #include "AliAnalysisTrackingUncertaintiesAOT.h"
@@ -88,7 +87,23 @@ AliAnalysisTrackingUncertaintiesAOT::AliAnalysisTrackingUncertaintiesAOT()
   fListHist(0x0),
   fESDtrackCuts(0x0),
   fVertex(0x0)
+  ,fmakefinerpTbin(kFALSE)
+  ,fUseCutGeoNcrNcl(kFALSE),
+  fDeadZoneWidth(2.),
+  fCutGeoNcrNclLength(130.),
+  fCutGeoNcrNclGeom1Pt(1.5),
+  fCutGeoNcrNclFractionNcr(0.9),
+  fCutGeoNcrNclFractionNcl(0.7),
+  fWhichCuts(kDefault),
+  fTPCclstCut(1)
+  ,fUsePbPb2018EvSel(kFALSE)
+  ,fPileUpPbPb2018cut(0)
+  ,fAliEventCuts(0)
+  ,fKeepOnlyPileUp(kFALSE)
+  ,fnBinsDCAxy_histTpcItsMatch(30)
 {
+
+  fAliEventCuts.SetManualMode();
 
 }
 //________________________________________________________________________
@@ -126,10 +141,25 @@ AliAnalysisTrackingUncertaintiesAOT::AliAnalysisTrackingUncertaintiesAOT(const c
   fListHist(0x0),
   fESDtrackCuts(0x0),
   fVertex(0x0)
+  ,fmakefinerpTbin(kFALSE)
+  ,fUseCutGeoNcrNcl(kFALSE),
+  fDeadZoneWidth(2.),
+  fCutGeoNcrNclLength(130.),
+  fCutGeoNcrNclGeom1Pt(1.5),
+  fCutGeoNcrNclFractionNcr(0.9),
+  fCutGeoNcrNclFractionNcl(0.7),
+  fWhichCuts(kDefault),
+  fTPCclstCut(1)
+  ,fUsePbPb2018EvSel(kFALSE)
+  ,fPileUpPbPb2018cut(0)
+  ,fAliEventCuts(0)
+  ,fKeepOnlyPileUp(kFALSE)
+  ,fnBinsDCAxy_histTpcItsMatch(30)
 {
   //
   // standard constructur
   //
+  fAliEventCuts.SetManualMode();
 
   DefineOutput(1, TList::Class());
 
@@ -162,10 +192,58 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
   // create track cuts
   //reproduce filtering cuts
   fESDtrackCuts = new AliESDtrackCuts("AliESDtrackCuts","AliESDtrackCuts");
-  fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2010(kFALSE,0);
-  fESDtrackCuts->SetEtaRange(-fMaxEta, fMaxEta);
-  fESDtrackCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(fCrossRowsOverFndCltTPC);
+  // choose a standard ESD track cut configuration, otherwise use the ESDtrackCuts object passed with SETESDtrackCuts function 
+  // NB: the default case is kStdITSTPCTrkCuts2011 with fTPCclstCut=1
+  switch (fWhichCuts)
+  {
+  // backward compatibility
+  case kDefault:
+    printf("\n### kDefault case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2010(kFALSE,0);   ---> cut on TPC # clusters\n   fESDtrackCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(%.2f);\n\n",fCrossRowsOverFndCltTPC);
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2010(kFALSE,0);
+    fESDtrackCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(fCrossRowsOverFndCltTPC);
+    break;
+  
+  case kStdTPConlyTrkCuts:
+    printf("\n### kStdTPConlyTrkCuts case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardTPCOnlyTrackCuts();\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardTPCOnlyTrackCuts();
+    break;
 
+  case kStdITSTPCTrkCuts2009:
+    printf("\n### kStdITSTPCTrkCuts2009 case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2009(kFALSE)\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2009(kFALSE);
+    break;
+
+  case kStdITSTPCTrkCuts2010:
+    printf("\n### kStdITSTPCTrkCuts2010 case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2010(kFALSE,%d)\n",fTPCclstCut);
+    if(fTPCclstCut==0)  printf("   ---> cut on TPC # clusters\n\n");
+    else if(fTPCclstCut==1) printf("   ---> cuts on the number of crossed rows and on the ration crossed rows/findable clusters\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2010(kFALSE,fTPCclstCut);
+    break;
+
+  case kStdITSTPCTrkCuts2011:
+    printf("\n### kStdITSTPCTrkCuts2011 case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,%d)\n",fTPCclstCut);
+    if(fTPCclstCut==0)  printf("   ---> cut on TPC # clusters\n\n");
+    else if(fTPCclstCut==1) printf("   ---> cuts on the number of crossed rows and on the ration crossed rows/findable clusters\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,fTPCclstCut);
+    break;
+
+  case kStdITSTPCTrkCuts2011TightChi2TPC:
+    printf("\n### kStdITSTPCTrkCuts2011TightChi2TPC case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011(kFALSE,%d)\n",fTPCclstCut);
+    printf("### (on top) esdTrackCuts->SetMaxChi2PerClusterTPC(2.5);");
+    if(fTPCclstCut==0)  printf("   ---> cut on TPC # clusters\n\n");
+    else if(fTPCclstCut==1) printf("   ---> cuts on the number of crossed rows and on the ration crossed rows/findable clusters\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2011TighterChi2(kFALSE,fTPCclstCut);
+    break;
+
+  case kStdITSTPCTrkCuts2015PbPb:
+    printf("\n### kStdITSTPCTrkCuts2015PbPb case for ESD track cuts\n   fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2015PbPb(kFALSE,%d,kTRUE,kFALSE)\n\n",fTPCclstCut);
+    if(fTPCclstCut==0)  printf("   ---> cut on TPC # clusters\n\n");
+    else if(fTPCclstCut==1) printf("   ---> cuts on the number of crossed rows and on the ration crossed rows/findable clusters\n\n");
+    fESDtrackCuts = AliESDtrackCuts::GetStandardITSTPCTrackCuts2015PbPb(kFALSE,fTPCclstCut,kTRUE,kFALSE);
+    break;
+  }
+  fESDtrackCuts->SetEtaRange(-fMaxEta, fMaxEta);  // common for every ESD track cuts set
+  if(fUseCutGeoNcrNcl)  fESDtrackCuts->SetCutGeoNcrNcl( fDeadZoneWidth, fCutGeoNcrNclLength, fCutGeoNcrNclGeom1Pt, fCutGeoNcrNclFractionNcr, fCutGeoNcrNclFractionNcl);
 
   //
   // Create histograms
@@ -175,7 +253,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
   //
   // (1.) basic QA and statistics histograms
   //
-  fHistNEvents = new TH1F("fHistNEvents", "Number of processed events",7,-1.5,5.5);
+  fHistNEvents = new TH1F("fHistNEvents", "Number of processed events",9,-1.5,7.5);
   fHistNEvents->Sumw2();
   fHistNEvents->SetMinimum(0);
   fHistNEvents->GetXaxis()->SetBinLabel(1,"Read from ESD");
@@ -185,6 +263,8 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
   fHistNEvents->GetXaxis()->SetBinLabel(5,"|zVertex|<10");
   fHistNEvents->GetXaxis()->SetBinLabel(6,"Error on zVertex<0.5");
   fHistNEvents->GetXaxis()->SetBinLabel(7,"Good Z vertex");
+  fHistNEvents->GetXaxis()->SetBinLabel(8,"Time-range cut");
+  fHistNEvents->GetXaxis()->SetBinLabel(9,"ITS-TPC OOB pile-up");
 
   fListHist->Add(fHistNEvents);
 
@@ -225,6 +305,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
     if(fDCAz){
       const Int_t nvars = 10;
       Int_t nBins[nvars]   = {600,   64,   29, 29,  18,   nEtaBins,    3,  2,    5,    2};
+      if(fmakefinerpTbin)   nBins[2]*=2;
       Double_t xmin[nvars] = {-3., -3.2,  0.5, 0.5, 0.,   -fMaxEta, -0.5, -2., -0.5, -0.5};
       Double_t xmax[nvars] = {3.,   3.2, 15.0, 15,  6.28,  fMaxEta,  2.5,  2.,  4.5,  1.5};
       TString axis[nvars]  = {"DCAxy","DCAz","track p_{T}","particle p_{T}","phi","eta","type (0=prim,1=sec,2=mat)","track label (1=lab>0,-1=lab<0)","species (0=e,1=#pi,2=k,3=p) - MC truth","TOFbc"};
@@ -238,6 +319,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
     else{
       const Int_t nvars = 8;
       Int_t nBins[nvars]   = {600,   29,  18,   nEtaBins,    3,  2,    5,    2};
+      if(fmakefinerpTbin)   nBins[1]*=2;
       Double_t xmin[nvars] = {-3.,   0.5,  0.,   -fMaxEta, -0.5, -2., -0.5, -0.5};
       Double_t xmax[nvars] = {3.,   15.0,  6.28,  fMaxEta,  2.5,  2.,  4.5,  1.5};
       TString axis[nvars]  = {"DCAxy","track p_{T}","phi","eta","type (0=prim,1=sec,2=mat)","track label (1=lab>0,-1=lab<0)","species (0=e,1=#pi,2=k,3=p) - MC truth","TOFbc"};
@@ -255,6 +337,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
     if(fDCAz){
       const Int_t nvars = 6;
       Int_t nBins[nvars]   = {600,   64,    29,    18,  nEtaBins,    2};
+      if(fmakefinerpTbin)   nBins[2]*=2;
       Double_t xmin[nvars] = {-3., -3.2,   0.5,    0.,  -fMaxEta, -0.5};
       Double_t xmax[nvars] = {3.,   3.2,  15.0,  6.28,   fMaxEta,  1.5};
       TString axis[nvars]  = {"DCAxy","DCAz","track p_{T}","phi","eta","TOFbc"};
@@ -264,6 +347,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserCreateOutputObjects()
     else{
       const Int_t nvars = 5;
       Int_t nBins[nvars]   = {600,   29,    18,  nEtaBins,    2};
+      if(fmakefinerpTbin)   nBins[1]*=2;
       Double_t xmin[nvars] = {-3.,   0.5,    0.,  -fMaxEta, -0.5};
       Double_t xmax[nvars] = {3.,    15.0,  6.28,   fMaxEta,  1.5};
       TString axis[nvars]  = {"DCAxy","track p_{T}","phi","eta","TOFbc"};
@@ -324,7 +408,7 @@ void AliAnalysisTrackingUncertaintiesAOT::UserExec(Option_t *)
   if((maskPhysSel & fTriggerMask)==0) return;
 
   fHistNEvents->Fill(0);
-  AliStack* stack = 0x0;
+  AliMCEvent* mcEvent=0x0;
   if(fMC){
     AliMCEventHandler* eventHandler = dynamic_cast<AliMCEventHandler*> (AliAnalysisManager::GetAnalysisManager()->GetMCtruthEventHandler());
     if (!eventHandler) {
@@ -332,15 +416,9 @@ void AliAnalysisTrackingUncertaintiesAOT::UserExec(Option_t *)
       PostData(1, fListHist);
       return;
     }
-    AliMCEvent* mcEvent = eventHandler->MCEvent();
+    mcEvent = eventHandler->MCEvent();
     if (!mcEvent) {
       AliWarning("ERROR: Could not retrieve MC event");
-      PostData(1, fListHist);
-      return;
-    }
-    stack = mcEvent->Stack();
-    if (!stack) {
-      AliWarning("ERROR: stack not available\n");
       PostData(1, fListHist);
       return;
     }
@@ -361,10 +439,59 @@ void AliAnalysisTrackingUncertaintiesAOT::UserExec(Option_t *)
   if (fUseCentrality!=kCentOff) {
     if(!IsEventSelectedInCentrality(fESD)) return;
   }
+
+  //
+  //  Event selection specific for Pb-Pb 2018 in data
+  //    1. time-range cut for LHC18r runs
+  //    2. pile-up rejection exploiting nClstTPC vs. nClstITS correlation
+  //
+  //  Pile-up rejection in MC
+  //
+  if(fUsePbPb2018EvSel){
+    
+    if(fMC && mcEvent){ // MC
+      Bool_t isPileUpGenMC = AliAnalysisUtils::IsPileupInGeneratedEvent(mcEvent,"Hijing");
+      if(isPileUpGenMC){  // the event is pile-up
+        fHistNEvents->Fill(7);
+        if(!fKeepOnlyPileUp){     // the event is pile-up and we want to reject it
+          return;
+        }
+      }
+      else{ // the event is not pile-up one, according to the selection
+        if(fKeepOnlyPileUp) return;
+      }
+    }
+    else{ // data
+      // set-up for Pb-Pb 2018
+      int run = fESD->GetRunNumber();
+      fAliEventCuts.SetupPbPb2018();
+      fAliEventCuts.UseTimeRangeCut();  // set the time-range cut
+      fAliEventCuts.SetRejectTPCPileupWithITSTPCnCluCorr(true, fPileUpPbPb2018cut); // set the out-of-bunch pile-up rejection according to ITS-TPC cluster correlation
+      //
+      // process the event with the mentioned selections
+      fAliEventCuts.AcceptEvent(fESD);
+      if(!fAliEventCuts.PassedCut(AliEventCuts::kTriggerClasses)){  // apply the time-range cut
+        fHistNEvents->Fill(6);
+        return;
+      }
+      if(!fAliEventCuts.PassedCut(AliEventCuts::kTPCPileUp)){ // apply the out-of-bunch pile-up rejection according to ITS-TPC cluster correlation
+        fHistNEvents->Fill(7);
+        if(!fKeepOnlyPileUp){     // the event is pile-up and we want to reject it
+          return;
+        }
+      }
+      else{ // the event is not pile-up one, according to the selection
+        if(fKeepOnlyPileUp) return;
+      }
+    }
+  
+  }
+
+
   //
   // Fill track cut variation histograms
   //
-  ProcessTracks(stack);
+  ProcessTracks(mcEvent);
   //
   // Post output data
   //
@@ -423,7 +550,7 @@ Bool_t AliAnalysisTrackingUncertaintiesAOT::IsEventSelectedInCentrality(AliESDEv
   }
 }
 //________________________________________________________________________
-void AliAnalysisTrackingUncertaintiesAOT::ProcessTracks(AliStack *stack) {
+void AliAnalysisTrackingUncertaintiesAOT::ProcessTracks(AliMCEvent *mcEvent) {
 
   //
   // fill track cut variation histograms - undo cuts step-by-step and fill histograms
@@ -479,6 +606,9 @@ void AliAnalysisTrackingUncertaintiesAOT::ProcessTracks(AliStack *stack) {
 
     AliESDtrack *track =fESD->GetTrack(i);
     if (!track) continue;
+
+
+
     track->SetESDEvent(fESD);
     if(!track->RelateToVertex(fVertex,fESD->GetMagneticField(),100)) continue;
     //fill TPCcls histo
@@ -486,20 +616,22 @@ void AliAnalysisTrackingUncertaintiesAOT::ProcessTracks(AliStack *stack) {
     nITS+=track->GetITSNcls();
 
     track->GetImpactParameters(dca, cov);
-    if(fMC){
-      part    = (TParticle*)stack->Particle(TMath::Abs(track->GetLabel()));
-      if(part){
+    if(fMC && mcEvent){
+      Int_t absLabel=TMath::Abs(track->GetLabel());
+      AliMCParticle* mcPart = (AliMCParticle*)mcEvent->GetTrack(absLabel);
+      part = (TParticle*)mcEvent->Particle(absLabel);
+      if(mcPart && part){
         pdgPart = part->GetPDG();
         if(pdgPart){
           code    = pdgPart->PdgCode();
-          if(stack->IsPhysicalPrimary(TMath::Abs(track->GetLabel()))) isph=1;
+          if(mcEvent->IsPhysicalPrimary(TMath::Abs(track->GetLabel()))) isph=1;
           else {
             isph = 0;
             uniqueID = part->GetUniqueID();
           }
-          Int_t indexMoth=part->GetFirstMother();
+          Int_t indexMoth=mcPart->GetMother();
           if(indexMoth>=0){
-            TParticle* moth = stack->Particle(indexMoth);
+            TParticle* moth = mcEvent->Particle(indexMoth);
             Float_t codemoth = TMath::Abs(moth->GetPdgCode());
             mfl = Int_t (codemoth/ TMath::Power(10, Int_t(TMath::Log10(codemoth))));
           }
@@ -873,7 +1005,7 @@ void AliAnalysisTrackingUncertaintiesAOT::InitializeTrackCutHistograms() {
   //  match TPC->ITS
   //                                  0-is matched, 1-pt, 2-eta,   3-phi,   4-pid(0-3 -> electron-proton, 4 -> undef, 5 -> all) 6-bcTOF 7-DCAxy
   Int_t nEtaBins = 2*fMaxEta/0.1;
-  Int_t    binsTpcItsMatch[kNumberOfAxes] = {    2,   29, nEtaBins,            18,  6,      3,    2,  30};
+  Int_t    binsTpcItsMatch[kNumberOfAxes] = {    2,   29, nEtaBins,            18,  6,      3,    2,  fnBinsDCAxy_histTpcItsMatch};
   Double_t minTpcItsMatch[kNumberOfAxes]  = { -0.5,  0.5, -fMaxEta,             0, -0.5, -1.5, -0.5, -3.};
   Double_t maxTpcItsMatch[kNumberOfAxes]  = {  1.5, 15.0,  fMaxEta, 2*TMath::Pi(),  5.5,  1.5,  1.5,  3.};
   //
@@ -890,3 +1022,4 @@ void AliAnalysisTrackingUncertaintiesAOT::InitializeTrackCutHistograms() {
     histTpcItsMatch->GetAxis(iaxis)->SetTitle(axisTitleTpcItsMatch[iaxis]);
   }
 }
+

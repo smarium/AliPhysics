@@ -14,26 +14,40 @@
 
 #include "AliFemtoDreamCollConfig.h"
 #include "AliFemtoDreamCorrHists.h"
+#include "AliFemtoDreamHigherPairMath.h"
 #include "AliFemtoDreamZVtxMultContainer.h"
 //Class containing all the different multiplicity containers for all the
 //particles
 class AliFemtoDreamPartCollection {
  public:
   AliFemtoDreamPartCollection();
-  AliFemtoDreamPartCollection(
-      AliFemtoDreamCollConfig *conf,bool MinimalBooking);
+  AliFemtoDreamPartCollection(const AliFemtoDreamPartCollection& coll);
+  AliFemtoDreamPartCollection(AliFemtoDreamCollConfig *conf,
+                              bool MinimalBooking);
+  AliFemtoDreamPartCollection& operator=(
+      const AliFemtoDreamPartCollection& coll);
   virtual ~AliFemtoDreamPartCollection();
   void SetEvent(std::vector<std::vector<AliFemtoDreamBasePart>> &Particles,
-                float ZVtx,float Mult,float cent);
-  void PrintEvent(int ZVtx,int Mult);
-  TList* GetHistList(){return fResults->GetHistList();};
-  TList* GetQAList(){return fResults->GetQAHists();};
-  TString ClassName() {return "ParticleCollection";};
+                float ZVtx, float Mult, float cent);
+  void SetEvent(std::vector<std::vector<AliFemtoDreamBasePart>> &Particles,
+                AliFemtoDreamEvent* evt);
+  void PrintEvent(int ZVtx, int Mult);
+  TList* GetHistList() {
+    return fHigherMath->GetHistList();
+  }
+  ;
+  TList* GetQAList() {
+    return fHigherMath->GetQAHists();
+  }
+  ;
+  TString ClassName() {
+    return "ParticleCollection";
+  }
+  ;
+  void FindBin(float ZVtxPos, float Multiplicity, int *returnBins);
  private:
-  void FindBin(float ZVtxPos,float Multiplicity,int *returnBins);
-  AliFemtoDreamCorrHists *fResults;
+  AliFemtoDreamHigherPairMath* fHigherMath;
   unsigned int fNSpecies;
-  bool fDoMCAncestorCheck;
   std::vector<std::vector<AliFemtoDreamZVtxMultContainer>> fZVtxMultBuffer;
   std::vector<float> fValuesZVtxBins;
   std::vector<int> fValuesMultBins;

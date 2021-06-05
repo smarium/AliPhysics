@@ -1,6 +1,6 @@
 #ifdef __CINT__
 
-#pragma link off all glols;
+#pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
 
@@ -55,7 +55,10 @@
 #pragma link C++ class AliTPCPerformanceSummary+;
 #pragma link C++ class AliAnalysisNoiseTPC+;
 #pragma link C++ class AliMCTreeTools+;
-
+#pragma link C++ class AliPIDtools+;
+#pragma link C++ class std::map<int,AliTPCPIDResponse *>+;
+#pragma link C++ class std::map<int,AliPIDResponse *>+;
+#pragma link C++ class AliESDtools+;
 #pragma link C++ class AliIntSpotEstimator+;
 #pragma link C++ class AliAnalysisTaskIPInfo+;
 
@@ -64,6 +67,7 @@
 #pragma link C++ class AliAnalysisTaskCheckVertexAOD+;
 #pragma link C++ class AliAnalysisTaskCheckESDTracks+;
 #pragma link C++ class AliAnalysisTaskCheckAODTracks+;
+#pragma link C++ class AliAnalysisTaskCountEvents+;
 #pragma link C++ class AliAnalysisTaskCheckGenKine+;
 #pragma link C++ class AliAnalysisTaskTrackingEffPID+;
 #pragma link C++ class AliAlignmentDataFilterITS+;
@@ -95,6 +99,8 @@
 
 #pragma link C++ class AliTaskConfigOCDB+;
 
+#pragma link C++ class AliAnalysisTaskTrackRefsChecksMultipleSpecies+;
+#pragma link C++ class AliAnalysisTaskTrackRefsChecks+;
 
 // TRD performance classes
 #pragma link C++ class  AliTenderSupplyTRD+;
@@ -143,6 +149,7 @@
 #pragma link C++ class  AliTPCPIDEtaTree+;
 #pragma link C++ class  AliTPCPIDEtaQA+;
 #pragma link C++ class  AliTPCcalibResidualPID+;
+#pragma link C++ class  AliTPCcalibResidualPID_Modified+;
 // TOF QA
 #pragma link C++ class  AliAnalysisTaskTOFqa+;
 #pragma link C++ class  AliAnalysisTaskTOFqaID+;
@@ -165,6 +172,9 @@
 #pragma link C++ class  AliAnalysisTaskZDCPbPb+;
 // T0
 #pragma link C++ class  AliT0AnalysisTaskQA+;
+#pragma link C++ class  AliAnalysisTaskSpectrumT0::SetEventID_t+;
+#pragma link C++ class  AliAnalysisTaskSpectrumT0::SetRunNums_t+;
+#pragma link C++ class  AliAnalysisTaskSpectrumT0+;
 // AD
 #pragma link C++ class  AliAnalysisTaskADQA+;
 #pragma link C++ class  AliAnalysisTaskADVVQA+;
@@ -192,6 +202,7 @@
 #pragma link C++ class  AliAnalysisTrackingUncertaintiesAOT+;
 #pragma link C++ class  AliAnalysisTrackingUncertainties+;
 #pragma link C++ class  AliAnalysisTaskEventCutsValidation+;
+#pragma link C++ class  AliAnalysisTaskEventCutsValidation::EventSummary+;
 
 // vdM task
 #pragma link C++ class  AliAnalysisTaskVdM::TreeData+;

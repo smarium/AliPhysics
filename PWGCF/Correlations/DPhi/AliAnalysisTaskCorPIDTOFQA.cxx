@@ -99,7 +99,10 @@ AliAnalysisTaskCorPIDTOFQA::AliAnalysisTaskCorPIDTOFQA() : AliAnalysisTaskSE(),
 
     fHistPt(0),                    //  1
     cent_ntracks(0),               //  2
-    
+
+    dEdx_p(0),
+    ndEdx_p(0),
+    dEdx_p_cut(0),
 //  m2_pt_pos(0),                  //  3
 //  m2_pt_neg(0),                  //  4
     m2_pt_pos_TPC(0),              //  5
@@ -289,7 +292,10 @@ AliAnalysisTaskCorPIDTOFQA::AliAnalysisTaskCorPIDTOFQA(const char* name) : AliAn
 
     fHistPt(0),                    //  1
     cent_ntracks(0),               //  2
-    
+
+    dEdx_p(0),
+    ndEdx_p(0),
+    dEdx_p_cut(0),    
 //  m2_pt_pos(0),                  //  3
 //  m2_pt_neg(0),                  //  4
     m2_pt_pos_TPC(0),              //  5
@@ -574,7 +580,9 @@ void AliAnalysisTaskCorPIDTOFQA::UserCreateOutputObjects()
     
     fHistPt                    = new TH1F("fHistPt",                    "Pt()",                         18, coarse_binning);                              //  1
     cent_ntracks               = new TH2F("cent_ntracks",               "cent_ntracks",                100,      0,    100,     100,       0,     800);   //  2
-    
+
+
+
 //  m2_pt_pos                  = new TH2F("m2_pt_pos",                  "m2_pt_pos",                    18, coarse_binning,    2400,    -1.0,     7.0);   //  3
 //  m2_pt_neg                  = new TH2F("m2_pt_neg",                  "m2_pt_neg",                    18, coarse_binning,    2400,    -1.0,     7.0);   //  4
     m2_pt_pos_TPC              = new TH2F("m2_pt_pos_TPC",              "m2_pt_pos_TPC",                18, coarse_binning,    2400,    -1.0,     7.0);   //  5
@@ -735,6 +743,12 @@ void AliAnalysisTaskCorPIDTOFQA::UserCreateOutputObjects()
     }
     // display plots
 
+    dEdx_p                     = new TH2F("dEdx_p",                     "dEdx_p",                        800, fine_binning,     800,       0,    1000);
+    ndEdx_p                    = new TH2F("ndEdx_p",                    "ndEdx_p",                       800, fine_binning,     800,     -10,      10);
+    dEdx_p_cut                 = new TH2F("dEdx_p_cut",                 "dEdx_p_cut",                    800, fine_binning,     800,       0,    1000);
+    
+    
+
     m2_pt_pos_fine             = new TH2F("m2_pt_pos_fine",             "m2_pt_pos_fine",              800,   fine_binning,    2400,    -1.0,     7.0);   // 72
     m2_pt_neg_fine             = new TH2F("m2_pt_neg_fine",             "m2_pt_neg_fine",              800,   fine_binning,    2400,    -1.0,     7.0);   // 73
     m2_pt_pos_TPC_fine         = new TH2F("m2_pt_pos_TPC_fine",         "m2_pt_pos_TPC_fine",          800,   fine_binning,    2400,    -1.0,     7.0);   // 74
@@ -779,6 +793,10 @@ void AliAnalysisTaskCorPIDTOFQA::UserCreateOutputObjects()
 
     fOutputList->Add(fHistPt);                      //  1
     fOutputList->Add(cent_ntracks);                 //  2
+
+    fOutputList->Add(dEdx_p);
+    fOutputList->Add(ndEdx_p);
+    fOutputList->Add(dEdx_p_cut);
     
 //  fOutputList->Add(m2_pt_pos);                    //  3
 //  fOutputList->Add(m2_pt_neg);                    //  4
@@ -1119,7 +1137,8 @@ void AliAnalysisTaskCorPIDTOFQA::UserExec(Option_t *)
 ////////////////////////////////////////
 	if(run_mode == 4  &&  fabs(dca[0]) > 0.1)                                       {    continue;    }      // used for systematic uncertainty calculation
 	if(run_mode == 4  &&  fabs(dca[1]) > 0.1)                                       {    continue;    }
-	
+
+
 //	Float_t deltat        = tof_minus_tpion(track);
 	float   mom           = track->P();
 
@@ -1132,8 +1151,26 @@ void AliAnalysisTaskCorPIDTOFQA::UserExec(Option_t *)
 //	beta                  = Beta(track);
 
 	Float_t TPC_PID       = 3.0;
-
+	
 	if(run_mode == 2){   TPC_PID = 2.0;   }
+
+
+	
+
+        // mark1
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	Double_t tpc_mom       = track->GetTPCmomentum();
+//	Double_t deuteron_dEdx = fPIDResponse->GetTPCResponse().GetExpectedSignal(tpc_mom,(AliPID::EParticleType)5);     // 5 = deuteron
+	Float_t dEdx           = track->GetTPCsignal();
+	Double_t nSigmaTPCDeut = fPIDResponse->NumberOfSigmasTPC(track,(AliPID::EParticleType)5);
+	
+	dEdx_p->Fill(mom, dEdx);
+	ndEdx_p->Fill(mom, nSigmaTPCDeut);
+	
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
+
 	
 	if(charge > 0)
 	{
@@ -1144,6 +1181,8 @@ void AliAnalysisTaskCorPIDTOFQA::UserExec(Option_t *)
 	    Double_t nSigmaTPCDeut = fPIDResponse->NumberOfSigmasTPC(track,(AliPID::EParticleType)5);  // 5 = deuteron
 	    if(TMath::Abs(nSigmaTPCDeut) < TPC_PID)
 	    {
+
+		dEdx_p_cut->Fill(mom, dEdx);
 		m2_pt_pos_TPC     ->Fill(pt,  m2tof);
 		m2_pt_pos_TPC_fine->Fill(pt,  m2tof);
 			
@@ -1374,6 +1413,8 @@ void AliAnalysisTaskCorPIDTOFQA::UserExec(Option_t *)
 	    
 	else if(charge < 0)
 	{
+	    dEdx_p_cut->Fill(mom, dEdx);
+			
 	    m2_pt_neg_fine->Fill(pt, m2tof);
 	    if(pt >= 1.0  &&  pt < 2.0)   tof_phi_eta_neg->Fill(phi, eta);
 
@@ -2127,7 +2168,7 @@ void AliAnalysisTaskCorPIDTOFQA::UserExec(Option_t *)
 
 
 
-    if(run_mode == 0)
+    if(run_mode == 9)
     {
     
     AliAODHandler *oh = (AliAODHandler*)AliAnalysisManager::GetAnalysisManager()->GetOutputEventHandler();

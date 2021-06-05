@@ -36,10 +36,14 @@ public:
   
   //PID functions
   //User should call ONLY the function GetParticleSpecies and set the PID strategy in the steering macro!
-  Int_t TellParticleSpecies( AliVTrack * trk );//calculate the PID according to the slected method. // for pt cut analysis
-  Int_t TellParticleSpecies_CircularCut( AliVTrack * trk );
-  Int_t TellParticleSpecies_by_P( AliVTrack * trk );//calculate the PID according to the slected method. // for p cut analysis
-  Int_t TellParticleSpecies_by_P_CircularCut( AliVTrack * trk );
+  Int_t TellParticleSpecies_1( AliVTrack * trk );//calculate the PID according to the slected method. // for pt cut analysis
+  Int_t TellParticleSpecies_2( AliVTrack * trk );//calculate the PID according to the slected method. // for pt cut analysis
+  Int_t TellParticleSpecies_CircularCut_1( AliVTrack * trk );
+  Int_t TellParticleSpecies_CircularCut_2( AliVTrack * trk );
+  Int_t TellParticleSpecies_by_P_1( AliVTrack * trk );//calculate the PID according to the slected method. // for p cut analysis
+  Int_t TellParticleSpecies_by_P_2( AliVTrack * trk );//calculate the PID according to the slected method. // for p cut analysis
+  Int_t TellParticleSpecies_by_P_CircularCut_1( AliVTrack * trk );
+  Int_t TellParticleSpecies_by_P_CircularCut_2( AliVTrack * trk );
   void CalculateNSigmas( AliVTrack * trk );   //Calcuate nsigma[ipart][idet], fill NSigma histos
   void CalculateTPCNSigmasElectron( AliVTrack * trk );
   void CheckTOF( AliVTrack * trk );   //check the TOF matching and set fHasTOFPID
@@ -48,14 +52,18 @@ public:
   Float_t TPC_EventPlane(AliAODEvent *event);
   Bool_t Is2015PileUpEvent();
   Bool_t StoreEventMultiplicities(AliVEvent *event);
+  Bool_t FromInjectedSignal(AliVTrack *trk) const;
+  Bool_t FromInjectedSignal(AliVParticle *part) const;
   
 private:
   Double_t fnsigmas[4][2]; //nsigma values
   Bool_t fHasTOFPID;
   Double_t fNSigmaPID; // number of sigma for PID cut
   Double_t fNSigmaPID_veto;
-  Double_t ptUpperLimit; //pt cut upper limit
-  Double_t ptTOFlowerBoundary; // pt value which is the boundary between TPC & TOF.
+  Double_t ptUpperLimit_1; //pt cut upper limit for particle 1
+  Double_t ptUpperLimit_2; //pt cut upper limit for particle 2
+  Double_t ptTOFlowerBoundary_1; // pt value which is the boundary between TPC & TOF.
+  Double_t ptTOFlowerBoundary_2; // pt value which is the boundary between TPC & TOF.
   Double_t electronNSigmaVeto;
   Bool_t fRemoveTracksT0Fill;//if true remove tracks for which only StartTime from To-Fill is available (worst resolution)
   
@@ -116,8 +124,11 @@ public:
   virtual     void    SetSinglesOnly(int v)               { _singlesOnly  = v; }
   virtual     void    SetPIDparticle( bool v )            { PIDparticle   = v; }
   virtual     void    SetUse_pT_cut( bool v )             { use_pT_cut   = v; }
+  virtual     void    SetVetoLambdaCut( bool v )          { veto_Lambda   = v; }
+  virtual     void    SetVetoLambdaSidebandLeft( bool v ) { veto_Lambda_left_sideband   = v; }
   virtual     void    SetUse_AliHelperPID( bool v )       { useAliHelperPID   = v; }
-  virtual     void    SetUse_CircularCutPID( bool v )     { useCircularCutPID = v; }
+  virtual     void    SetUse_CircularCutPID_1( bool v )   { useCircularCutPID_1 = v; }
+  virtual     void    SetUse_CircularCutPID_2( bool v )   { useCircularCutPID_2 = v; }
   virtual     void    SetIfContaminationInMC( bool v )    { NoContamination   = v; }
   virtual     void    SetUseWeights(int v)                { _useWeights   = v; }
   virtual     void    SetUseRapidity(int v)               { _useRapidity  = v; }
@@ -155,10 +166,14 @@ public:
   virtual     void    SetNPhiBins2( int v)            { _nBins_phi_2       = v; }
   virtual     void    SetEtaMin2(double v)            { _min_eta_2         = v; } // SetYMin2 acturally
   virtual     void    SetEtaMax2(double v)            { _max_eta_2         = v; } // SetYMax2 acturally
-  virtual     void    SetDcaZMin(double v)            { _dcaZMin           = v; }
-  virtual     void    SetDcaZMax(double v)            { _dcaZMax           = v; }
-  virtual     void    SetDcaXYMin(double v)           { _dcaXYMin          = v; }
-  virtual     void    SetDcaXYMax(double v)           { _dcaXYMax          = v; }
+  virtual     void    SetDcaZMin_1(double v)          { _dcaZMin_1         = v; }
+  virtual     void    SetDcaZMax_1(double v)          { _dcaZMax_1         = v; }
+  virtual     void    SetDcaXYMin_1(double v)         { _dcaXYMin_1        = v; }
+  virtual     void    SetDcaXYMax_1(double v)         { _dcaXYMax_1        = v; }
+  virtual     void    SetDcaZMin_2(double v)          { _dcaZMin_2         = v; }
+  virtual     void    SetDcaZMax_2(double v)          { _dcaZMax_2         = v; }
+  virtual     void    SetDcaXYMin_2(double v)         { _dcaXYMin_2        = v; }
+  virtual     void    SetDcaXYMax_2(double v)         { _dcaXYMax_2        = v; }
   virtual     void    SetTPCNclus(int v)              { _tpcnclus          = v; }
   virtual     void    SetChi2PerNDF(double v)         { _chi2ndf           = v; }
   
@@ -179,11 +194,16 @@ public:
   void SetSystemType( const char * systemType )     { fSystemType = systemType; }
   void SetResonancesCut( Bool_t NoResonances )      { fExcludeResonancesInMC = NoResonances; }
   void SetElectronCut( Bool_t NoElectron )          { fExcludeElectronsInMC = NoElectron; }
+  void SetExcludeInjectedSignals(Bool_t yes = true) { fExcludeInjectedSignals = yes; }
+  void SetGenToBeKept(const char *genname)          { fGenToBeKept = genname; }
+  void SetUseMomentumOrder(bool yes = true)         { fUseMomentumOrder = yes; }
   
   void SetNSigmaCut( double nsigma )             { fNSigmaPID = nsigma; }
   void SetNSigmaCut_veto( double nsigma )        { fNSigmaPID_veto = nsigma; }
-  void SetPtCutUpperLimit( double ptUpper )      { ptUpperLimit = ptUpper; }
-  void SetPtTOFlowerBoundary( double ptTPCTOFboundary )   { ptTOFlowerBoundary = ptTPCTOFboundary; }
+  void SetPtCutUpperLimit_1( double ptUpper_1 )      { ptUpperLimit_1 = ptUpper_1; }
+  void SetPtCutUpperLimit_2( double ptUpper_2 )      { ptUpperLimit_2 = ptUpper_2; }
+  void SetPtTOFlowerBoundary_1( double ptTPCTOFboundary_1 )   { ptTOFlowerBoundary_1 = ptTPCTOFboundary_1; }
+  void SetPtTOFlowerBoundary_2( double ptTPCTOFboundary_2 )   { ptTOFlowerBoundary_2 = ptTPCTOFboundary_2; }
   void SetElectronNSigmaVetoCut( double electronVeto )   { electronNSigmaVeto = electronVeto; }
   void SetfRemoveTracksT0Fill( bool tof )     { fRemoveTracksT0Fill = tof; }    //fRemoveTracksT0Fill
   //void SetAliEventCuts(AliEventCuts * Event_Cut)     { fEventCut = Event_Cut; }
@@ -213,8 +233,11 @@ protected:
   int      _singlesOnly;
   bool      PIDparticle;
   bool      use_pT_cut;
+  bool      veto_Lambda;
+  bool      veto_Lambda_left_sideband;
   bool      useAliHelperPID;
-  bool      useCircularCutPID;
+  bool      useCircularCutPID_1;
+  bool      useCircularCutPID_2;
   bool      NoContamination;
   int      _useWeights;
   int      _useRapidity;
@@ -236,10 +259,14 @@ protected:
   double   _centralityMax;
   int      _requestedCharge_1;
   int      _requestedCharge_2;
-  double   _dcaZMin;
-  double   _dcaZMax;
-  double   _dcaXYMin;
-  double   _dcaXYMax;
+  double   _dcaZMin_1;
+  double   _dcaZMax_1;
+  double   _dcaXYMin_1;
+  double   _dcaXYMax_1;
+  double   _dcaZMin_2;
+  double   _dcaZMax_2;
+  double   _dcaXYMin_2;
+  double   _dcaXYMax_2;
   double   _dedxMin;
   double   _dedxMax;
   int      _nClusterMin;
@@ -249,9 +276,12 @@ protected:
   
   TString      fAnalysisType;
   TString      fSystemType;
+  TString      fGenToBeKept;
   
   Bool_t fExcludeResonancesInMC;
   Bool_t fExcludeElectronsInMC;
+  Bool_t fExcludeInjectedSignals;
+  Bool_t fUseMomentumOrder;
   
   TFormula *f2015V0MtoTrkTPCout;
   TFormula *f2015V0MtoTrkTPCout_Upper;
@@ -502,6 +532,8 @@ protected:
   
   TH1F     * _invMassKaon;
   TH1F     * _invMassKaonSq;
+  TH1F     * _invMassLambda;
+  TH1F     * _invMassLambdaSq;
   TH1F     * _invMassElec;
   
   TString n1Name;
@@ -611,6 +643,37 @@ protected:
   
   ClassDef(AliAnalysisTaskGeneralBF,1)
 };
+
+inline   Bool_t AliAnalysisTaskGeneralBF::FromInjectedSignal(AliVTrack *trk) const {
+  //exclude tracks from injected signals
+  if (fExcludeInjectedSignals){
+    TString generatorName;
+    Int_t label = TMath::Abs(trk->GetLabel());
+    Bool_t hasGenerator = fMCEvent->GetCocktailGenerator(label,generatorName);
+    if (!hasGenerator)
+      return true;
+    if (!generatorName.Contains(fGenToBeKept.Data())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline   Bool_t AliAnalysisTaskGeneralBF::FromInjectedSignal(AliVParticle *part) const {
+  //exclude tracks from injected signals
+  if (fExcludeInjectedSignals){
+    TString generatorName;
+    Int_t label = TMath::Abs(part->GetLabel());
+    Bool_t hasGenerator = fMCEvent->GetCocktailGenerator(label,generatorName);
+    if (!hasGenerator)
+      return true;
+    if (!generatorName.Contains(fGenToBeKept.Data())) {
+      return true;
+    }
+  }
+  return false;
+}
+
 
 
 #endif

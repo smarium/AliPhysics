@@ -24,22 +24,39 @@ include_directories(${AliPhysics_SOURCE_DIR}/PWGUD/UPC
 
 # Additional include folders in alphabetical order except ROOT
 include_directories(${ROOT_INCLUDE_DIRS}
+		    ${AliPhysics_SOURCE_DIR}/PWGUD/base
 		    ${AliPhysics_SOURCE_DIR}/OADB
+		    ${AliPhysics_SOURCE_DIR}/OADB/COMMON/MULTIPLICITY
                     ${AliPhysics_SOURCE_DIR}/PWG/muon
                    )
 
 # Sources in alphabetical order
 set(SRCS
+    AliAnalysisTaskLumiStabi.cxx
+    AliAnalysisTaskSatellites.cxx
     AliAnalysisTaskUpcEtaC.cxx
     AliAnalysisTaskUpcFilter.cxx
-    AliAnalysisTaskUpcK0sK0s.cxx
+                AliAnalysisTaskUpcFourPi.cxx
+    AliAnalysisTaskUpcK0sK0s.cxx          
     AliAnalysisTaskUpcPhi.cxx
-    AliAnalysisTaskUpcPsi2s.cxx
+    AliAnalysisTaskUPCPhiTest.cxx
+		AliAnalysisTaskUpcPsi2s.cxx
     AliAnalysisTaskUpcRho0.cxx
-    AliAnalysisTaskUpcTree.cxx
+    AliAnalysisTaskUpc4Prongs.cxx
+    AliAnalysisTaskUpc4Pi.cxx
+		AliAnalysisTaskUpcTree.cxx
+		AliAnalysisTaskADin2018.cxx
+		AliAnalysisTaskForMCpPb.cxx
+		AliAnalysisTaskUPCforward.cxx
+		AliAnalysisTaskUPCforwardMC.cxx
+		AliAnalysisTaskUPCforward2.cxx
+		AliAnalysisTaskUPCforwardpPb.cxx
+		AliAnalysisTaskMatchTriggerForward.cxx
+		AliAnalysisTaskCTrue.cxx
+    AliAnalysisTaskNanoMUON.cxx
+		AliAnalysisTaskUpcEtaCAWP.cxx
     AliUPCEvent.cxx
     AliUPCMuonTrack.cxx
-    AliUpcParticle.cxx
     AliUPCTrack.cxx
     nanoAOD/AliAnalysisTaskFilterUPCNanoAOD.cxx
     nanoAOD/AliAODUPCReplicator.cxx
@@ -48,6 +65,7 @@ set(SRCS
     AliAnalysisTaskTransTask.cxx
     AliAnalysisTaskTOFTrigger.cxx
     AliAnalysisTaskZDCTree.cxx
+    Polarization.cxx
    )
 
 # Headers from sources
@@ -59,14 +77,14 @@ get_directory_property(incdirs INCLUDE_DIRECTORIES)
 generate_dictionary("${MODULE}" "${MODULE}LinkDef.h" "${HDRS}" "${incdirs}")
 
 set(ROOT_DEPENDENCIES Core EG Hist Physics RIO Tree)
-set(ALIROOT_DEPENDENCIES ANALYSIS ANALYSISalice AOD ESD STEERBase PWGmuon TOFbase)
+set(ALIROOT_DEPENDENCIES ANALYSIS ANALYSISalice AOD ESD STEERBase PWGmuon TOFbase PWGUDbase)
 
 # Generate the ROOT map
 # Dependecies
 set(LIBDEPS ${ALIROOT_DEPENDENCIES} ${ROOT_DEPENDENCIES})
 generate_rootmap("${MODULE}" "${LIBDEPS}" "${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}LinkDef.h")
 
-# Create an object to be reused in case of static libraries 
+# Create an object to be reused in case of static libraries
 # Otherwise the sources will be compiled twice
 add_library(${MODULE}-object OBJECT ${SRCS} G__${MODULE}.cxx)
 # Add a library to the project using the object

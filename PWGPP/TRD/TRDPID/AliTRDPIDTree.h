@@ -64,7 +64,13 @@ class AliTRDPIDTree : public AliAnalysisTaskSE {
       kpp = 0,
       kpPb = 1,
       kPbPb = 2
-    } ECollisionSystem_t;
+  } ECollisionSystem_t;
+
+  typedef enum{
+      kNoPileUpCut=0,
+      kLHC15o = 1,
+      kLHC18q = 2
+  } Period;
 
   AliTRDPIDTree(const char *name = "trd_pid_tree");
   virtual ~AliTRDPIDTree();
@@ -98,6 +104,10 @@ class AliTRDPIDTree : public AliAnalysisTaskSE {
       fCollisionSystem.SetBitNumber(kpp, kFALSE);
       fCollisionSystem.SetBitNumber(kpPb, kFALSE);
       fCollisionSystem.SetBitNumber(kPbPb, kTRUE);
+  };
+
+  void SetUseExtraPileupCut(Int_t UseExtraPileupCut=0){
+      fUseExtraPileupCut=UseExtraPileupCut;
   };
 
   protected:
@@ -138,7 +148,7 @@ class AliTRDPIDTree : public AliAnalysisTaskSE {
   Float_t fpdg;                        //! particle type (pdg value)
   Int_t frun;                          //! run number
 
-  Bool_t fUseExtraPileupCut;           //! cut on correlation of VZERO multiplicity & TPCout tracks (LHC15o pass1)
+  Int_t fUseExtraPileupCut;           // cut on correlation of VZERO multiplicity & TPCout tracks 
   
   // TTree stuff for PID References
   Int_t frunnumber;                  //! Tree: Run number
@@ -177,6 +187,6 @@ class AliTRDPIDTree : public AliAnalysisTaskSE {
   AliTRDPIDTree(const AliTRDPIDTree&); // not implemented
   AliTRDPIDTree& operator=(const AliTRDPIDTree&); // not implemented
   
-  ClassDef(AliTRDPIDTree, 3);
+  ClassDef(AliTRDPIDTree, 5);
 };
 #endif

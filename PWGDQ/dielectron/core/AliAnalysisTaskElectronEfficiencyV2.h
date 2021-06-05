@@ -15,9 +15,11 @@
 #include "AliAnalysisTaskSE.h"
 #include "AliDielectronSignalMC.h"
 #include "TString.h"
+#include "THnSparse.h"
 class TH1F;
 class TH2F;
 class TH3D;
+
 
 class AliTriggerAnalysis;
 class AliAnalysisFilter;
@@ -45,6 +47,7 @@ public:
    // called at end of analysis
    virtual void Terminate(Option_t* option);
 
+  void PrintSummary();
 
    enum Detector {kITS, kTPC, kTOF};
    Bool_t               GetEnablePhysicsSelection() const   {return fSelectPhysics; }
@@ -58,6 +61,7 @@ public:
    // MC Signal setter
    void   AddSingleLegMCSignal(AliDielectronSignalMC signal1)         {fSingleLegMCSignal.push_back(signal1);}
    void   AddPairMCSignal(AliDielectronSignalMC signal1)              {fPairMCSignal.push_back(signal1);}
+   void   AddMCSignalsWhereDielectronPairNotFromSameMother(std::vector<bool> vec) {fDielectronPairNotFromSameMother = vec;}
 
    // PID correction functions
    void   SetCentroidCorrFunction(Detector det, TObject *fun, UInt_t varx, UInt_t vary=0, UInt_t varz=0);
@@ -65,15 +69,27 @@ public:
 
 
    // Generator
-   void   SetGeneratorName(TString generatorName) { fGeneratorName = generatorName;}
+   void   SetGeneratorName         (TString generatorName) { fGeneratorName = generatorName;}
+   void   SetGeneratorMCSignalName (TString generatorName) { fGeneratorMCSignalName  = generatorName;}
+   void   SetGeneratorULSSignalName(TString generatorName) { fGeneratorULSSignalName = generatorName;}
+
+   void   SetCheckGenID(Bool_t flag) { fCheckGenID = flag;}
+   void   SetGeneratorIndex         (std::vector<UInt_t> generatorIndex) { fGeneratorIndex = generatorIndex;}
+   void   SetGeneratorMCSignalIndex (std::vector<UInt_t> generatorIndex) { fGeneratorMCSignalIndex  = generatorIndex;}
+   void   SetGeneratorULSSignalIndex(std::vector<UInt_t> generatorIndex) { fGeneratorULSSignalIndex = generatorIndex;}
+
 
    // Event setter
    void   SetEnablePhysicsSelection(Bool_t selectPhysics)   {fSelectPhysics = selectPhysics;}
    void   SetTriggerMask(Int_t triggermask)                 {fTriggerMask = triggermask;}
    void   SetEventFilter(AliAnalysisCuts * const filter)    {fEventFilter = filter;}
-   void   SetCentrality(double cent_min, double cent_max)             {fMinCentrality = cent_min; fMaxCentrality = cent_max;} //For pp and pPb analysis use SetCentrality(-1, -1)
+   void   SetCentrality(double cent_min, double cent_max)   {fMinCentrality = cent_min; fMaxCentrality = cent_max;} // To ignore centrality use SetCentrality(-1, -1)
+   void   SetCentralityEstimator(TString estimator)         {fCentralityEst = estimator;}
 
    void   SetCentralityFile(std::string filename) {fCentralityFilename = filename; }
+
+  void   SetCentralityFileFromAlien(std::string filename) {fCentralityFilenameFromAlien = filename; }
+  void   SetCentralityFile(std::string filenamelocal,std::string filenamealien);
 
    // Support Histos
    void   SetSupportHistoMCSignalAndCutsetting(int nMCSignal, int nCutsetting) {fSupportMCSignal = nMCSignal; fSupportCutsetting = nCutsetting;}
@@ -81,6 +97,8 @@ public:
    // Resolution setter
    void   SetResolutionFile(std::string filename) {fResoFilename = filename; }
    void   SetResolutionFileFromAlien(std::string filename) {fResoFilenameFromAlien = filename; }
+   void   SetResolutionFile(std::string filenamelocal,std::string filenamealien);
+   void   SetSmearGenerated(bool setSmearingGen) { fDoGenSmearing = setSmearingGen; }
    void   SetResolutionDeltaPtBinsLinear (const double min, const double max, const unsigned int steps){SetBinsLinear("ptDelta_reso", min, max, steps);}
    void   SetResolutionRelPtBinsLinear   (const double min, const double max, const unsigned int steps){SetBinsLinear("ptRel_reso", min, max, steps);}
    void   SetResolutionEtaBinsLinear  (const double min, const double max, const unsigned int steps){SetBinsLinear("eta_reso", min, max, steps);}
@@ -97,18 +115,42 @@ public:
    void   SetThetaBinsLinear(const double min, const double max, const unsigned int steps){SetBinsLinear("theta", min, max, steps);}
 
    // pair binning setter
+   void   SetMassBins(std::vector<double> massBins){fMassBins=massBins;}
    void   SetMassBinsLinear(const double min, const double max, const unsigned int steps){SetBinsLinear("mass", min, max, steps);}
+   void   SetPairPtBins(std::vector<double> pairptBins){ fPairPtBins = pairptBins;}
    void   SetPairPtBinsLinear(const double min, const double max, const unsigned int steps){SetBinsLinear("pairpt", min, max, steps);}
+   void   SetPhiVBins(std::vector<double> phivBins){fPhiVBins=phivBins;}
+   void   SetPhiVBinsLinear(const double min, const double max, const unsigned int steps){SetBinsLinear("phiv", min, max, steps);}
 
    // Pair related setter
    void   SetDoPairing(Bool_t doPairing) {fDoPairing = doPairing;}
    void   SetULSandLS(Bool_t doULSandLS) {fDoULSandLS = doULSandLS;}
+   void   SetDeactivateLS(Bool_t deactivateLS) {fDeactivateLS = deactivateLS;}
    void   SetKinematicCuts(double ptMin, double ptMax, double etaMin, double etaMax) {fPtMin = ptMin; fPtMax = ptMax; fEtaMin = etaMin; fEtaMax = etaMax;}
+   void   SetOpeningAngleAccCut(Bool_t op, Double_t opmin, Double_t opmax) {fOpeningAngleAccCut = op; fOpMin = opmin; fOpMax = opmax;}
+   void   SetFillPhiV(Bool_t doPhiV) {fDoFillPhiV = doPhiV;}
+   void   SetPhiVCut(Bool_t apply, Double_t maxMee, Double_t minphiv){fApplyPhivCut = apply; fMaxMee = maxMee; fMinPhiV = minphiv;}
+
+   // Single leg from Pair related setter
+   void   SetWriteLegsFromPair(bool enable){fWriteLegsFromPair = enable;}
+   void   SetPtMinLegsFromPair(const double ptMin){fPtMinLegsFromPair = ptMin;}
+   void   SetPtMaxLegsFromPair(const double ptMax){fPtMaxLegsFromPair = ptMax;}
+   void   SetEtaMinLegsFromPair(const double etaMin){fEtaMinLegsFromPair = etaMin;}
+   void   SetEtaMaxLegsFromPair(const double etaMax){fEtaMaxLegsFromPair = etaMax;}
+   void   SetPhiMinLegsFromPair(const double phiMin){fPhiMinLegsFromPair = phiMin;}
+   void   SetPhiMaxLegsFromPair(const double phiMax){fPhiMaxLegsFromPair = phiMax;}
+   void   SetOpAngleMinLegsFromPair(const double opAngleMin){fOpAngleMinLegsFromPair = opAngleMin;}
+   void   SetOpAngleMaxLegsFromPair(const double opAngleMax){fOpAngleMaxLegsFromPair = opAngleMax;}
+   void   SetPtNBinsLegsFromPair(const int ptNBins){fPtNBinsLegsFromPair = ptNBins;}
+   void   SetEtaNBinsLegsFromPair(const int etaNBins){fEtaNBinsLegsFromPair = etaNBins;}
+   void   SetPhiNBinsLegsFromPair(const int phiNBins){fPhiNBinsLegsFromPair = phiNBins;}
+   void   SetOpAngleNBinsLegsFromPair(const int opAngleNBins){fOpAngleNBinsLegsFromPair = opAngleNBins;}
 
    // Set Cocktail waiting
    void SetDoCocktailWeighting(bool doCocktailWeight) { fDoCocktailWeighting = doCocktailWeight; }
    void SetCocktailWeighting(std::string CocktailFilename) { fCocktailFilename = CocktailFilename; }
    void SetCocktailWeightingFromAlien(std::string CocktailFilenameFromAlien) { fCocktailFilenameFromAlien = CocktailFilenameFromAlien; }
+   void  SetCocktailWeighting(std::string CocktailFilenamelocal,std::string CocktailFilenamealien);
 
    // Generator related setter
    void   SetMinPtGen(double ptMin)   {fPtMinGen = ptMin;}; // Look only at particles which are above a threshold. (reduces computing time/less tracks when looking at secondaries)
@@ -122,13 +164,20 @@ public:
   class Particle{
   public:
     Particle() :
-      fPt(-99), fEta(-99), fPhi(-99), fCharge(-99), fPt_smeared(0.), fEta_smeared(0.), fPhi_smeared(0.), fTrackID(0), fMotherID(0), isMCSignal(), isReconstructed() {}
+      fPt(-99), fEta(-99), fPhi(-99), fCharge(-99), fPt_smeared(0.), fEta_smeared(0.), fPhi_smeared(0.), fTrackID(0), fMotherID(0), fMCSignalPair(false), fULSSignalPair(false), isMCSignal(), isReconstructed(), DielectronPairFromSameMother() {}
     Particle(double pt, double eta, double phi, short charge) :
-      fPt(pt), fEta(eta), fPhi(phi), fCharge(charge), fPt_smeared(0.), fEta_smeared(0.), fPhi_smeared(0.), fTrackID(0), fMotherID(0), isMCSignal(), isReconstructed() {}
+      fPt(pt), fEta(eta), fPhi(phi), fCharge(charge), fPt_smeared(0.), fEta_smeared(0.), fPhi_smeared(0.), fTrackID(0), fMotherID(0), fMCSignalPair(false), fULSSignalPair(false), isMCSignal(), isReconstructed(), DielectronPairFromSameMother() {}
+
     void SetTrackID(int id) {fTrackID = id;}
     void SetMotherID(int id) {fMotherID = id;}
+    void SetMCSignalPair (bool value) {fMCSignalPair = value;}
+    void SetULSSignalPair(bool value) {fULSSignalPair = value;}
+    void SetDielectronPairFromSameMother(std::vector<Bool_t> vec){DielectronPairFromSameMother = vec;}
+
     int  GetTrackID() {return fTrackID;}
     int  GetMotherID() {return fMotherID;}
+    bool GetMCSignalPair() {return fMCSignalPair;}
+    bool GetULSSignalPair() {return fULSSignalPair;}
 
     double  fPt;
     double  fEta;
@@ -139,8 +188,11 @@ public:
     double  fPhi_smeared;
     int     fTrackID;
     int     fMotherID;
+    bool    fMCSignalPair;
+    bool    fULSSignalPair;
     std::vector<Bool_t> isMCSignal;
     std::vector<Bool_t> isReconstructed;
+    std::vector<Bool_t> DielectronPairFromSameMother;
   };
 
 private:
@@ -151,8 +203,9 @@ private:
   void    SetPIDResponse(AliPIDResponse *fPIDRespIn)        {fPIDResponse = fPIDRespIn;}
   void    CheckSingleLegMCsignals(std::vector<Bool_t>& vec, const int track);
   void    CheckPairMCsignals(std::vector<Bool_t>& vec, AliVParticle* part1, AliVParticle* part2);
-  bool    CheckGenerator(int trackID);
-
+  bool    CheckGenerator(int trackID, std::vector<unsigned int> vecHashes);
+  bool    CheckGeneratorIndex(int trackID, std::vector<unsigned int> vecGenIDs);
+  void    CheckIfFromMotherWithDielectronAsDaughter(Particle& part);
   Bool_t  CheckIfOneIsTrue(std::vector<Bool_t>& vec);
 
   Particle    CreateParticle(AliVParticle* part);
@@ -165,6 +218,8 @@ private:
   Double_t GetSmearing(TObjArray *arr, Double_t x);
 
   double GetWeight(Particle part1, Particle part2, double motherpt);
+  double PhivPair(Double_t MagField, Int_t charge1, Int_t charge2, TVector3 dau1, TVector3 dau2);
+  Double_t CalculateNbins();
 
   AliAnalysisCuts*  fEventFilter; // event filter
 
@@ -182,10 +237,13 @@ private:
   TList* fResolutionList;
 
   TH2D* fPGen_DeltaP;
+  TH2D* fPGen_PrecOverPGen;
   TH2D* fPtGen_DeltaPt;
   TH2D* fPtGen_DeltaPtOverPtGen;
-  TH2D* fPGen_PrecOverPGen;
   TH2D* fPtGen_PtRecOverPtGen;
+  TH2D* fPtGen_DeltaPt_wGenSmeared;
+  TH2D* fPtGen_DeltaPtOverPtGen_wGenSmeared;
+  TH2D* fPtGen_PtRecOverPtGen_wGenSmeared;
   TH2D* fPGen_DeltaEta;
   TH2D* fPtGen_DeltaEta;
   TH2D* fPGen_DeltaTheta;
@@ -208,11 +266,19 @@ private:
   std::vector<double> fResolutionThetaBins;
   std::vector<double> fMassBins;
   std::vector<double> fPairPtBins;
+  std::vector<double> fPhiVBins;
+  bool fDoGenSmearing;
 
   double  fPtMin; // Kinematic cut for pairing
   double  fPtMax; // Kinematic cut for pairing
   double  fEtaMin; // Kinematic cut for pairing
   double  fEtaMax; // Kinematic cut for pairing
+
+  Bool_t fOpeningAngleAccCut; // opening angle cut in acceptance
+  Double_t fOpMin; // min
+  Double_t fOpMax; // max
+
+
 
   double  fPtMinGen;
   double  fPtMaxGen;
@@ -221,9 +287,19 @@ private:
 
   std::vector<AliDielectronSignalMC> fSingleLegMCSignal;
   std::vector<AliDielectronSignalMC> fPairMCSignal;
+  std::vector<bool> fDielectronPairNotFromSameMother; // this is used to get electrons from charmed mesons in a environment where GEANT is doing the decay of D mesons, like in LHC18b5a
 
   TString fGeneratorName;
+  TString fGeneratorMCSignalName;
+  TString fGeneratorULSSignalName;
   std::vector<unsigned int> fGeneratorHashs;
+  std::vector<unsigned int> fGeneratorMCSignalHashs;
+  std::vector<unsigned int> fGeneratorULSSignalHashs;
+
+  Bool_t fCheckGenID;
+  std::vector<UInt_t> fGeneratorIndex;
+  std::vector<UInt_t> fGeneratorMCSignalIndex;
+  std::vector<UInt_t> fGeneratorULSSignalIndex;
 
   AliPIDResponse* fPIDResponse;
   AliVEvent*      fEvent;
@@ -241,16 +317,21 @@ private:
 
   TH1F* fHistEvents;
   TH1F* fHistEventStat;
+  TH1F* fHistCentralityRaw;
   TH1F* fHistCentrality;
   TH1F* fHistVertex;
   TH1F* fHistVertexContibutors;
   TH1F* fHistNTracks;
   Double_t fMinCentrality;
   Double_t fMaxCentrality;
+  TString fCentralityEst; // Which centrality estimator to use.
 
   TFile* fCentralityFile;
   std::string fCentralityFilename;
+  std::string fCentralityFilenameFromAlien;
   TH1F* fHistCentralityCorrection;
+  Double_t fNBinsCentralityCorr;
+  Double_t fEntriesCentralityCorr;
   TList* fOutputListSupportHistos;
 
   std::vector<TH3D*> fHistGenPosPart;
@@ -262,13 +343,35 @@ private:
 
   std::vector<TH2D*> fHistGenPair;
   std::vector<TH2D*> fHistGenSmearedPair;
-  std::vector<TH2D*> fHistRecPair;
+  std::vector<TObject*> fHistRecPair;
   std::vector<TH2D*> fHistGenPair_ULSandLS;
   std::vector<TH2D*> fHistGenSmearedPair_ULSandLS;
   std::vector<TH2D*> fHistRecPair_ULSandLS;
 
+  bool fWriteLegsFromPair;
+  double fPtMinLegsFromPair;
+  double fPtMaxLegsFromPair;
+  double fEtaMinLegsFromPair;
+  double fEtaMaxLegsFromPair;
+  double fPhiMinLegsFromPair;
+  double fPhiMaxLegsFromPair;
+  double fOpAngleMinLegsFromPair;
+  double fOpAngleMaxLegsFromPair;
+  int fPtNBinsLegsFromPair;
+  int fEtaNBinsLegsFromPair;
+  int fPhiNBinsLegsFromPair;
+  int fOpAngleNBinsLegsFromPair;
+  std::vector<THnSparseF*> fTHnSparseGenSmearedLegsFromPair;
+  std::vector<THnSparseF*> fTHnSparseRecLegsFromPair;
+
+  Bool_t fDoFillPhiV;
+  Bool_t fApplyPhivCut;
+  Double_t fMaxMee;
+  Double_t fMinPhiV;
+
   Bool_t fDoPairing;
   Bool_t fDoULSandLS;
+  Bool_t fDeactivateLS;
   std::vector<Particle> fGenNegPart;
   std::vector<Particle> fGenPosPart;
   std::vector<Particle> fRecNegPart;
@@ -294,11 +397,13 @@ private:
   TH1* fPostPIDWdthCorrTOF;      // post pid correction object for widths in TOF
 
 
+
   AliAnalysisTaskElectronEfficiencyV2(const AliAnalysisTaskElectronEfficiencyV2&); // not implemented
   AliAnalysisTaskElectronEfficiencyV2& operator=(const AliAnalysisTaskElectronEfficiencyV2&); // not implemented
 
-  ClassDef(AliAnalysisTaskElectronEfficiencyV2, 1);
+  ClassDef(AliAnalysisTaskElectronEfficiencyV2, 8);
 };
 
 
 # endif
+

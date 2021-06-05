@@ -39,7 +39,9 @@ include_directories(${ROOT_INCLUDE_DIRS}
 set(SRCS
 	AliJFlowHistos.cxx
 	AliJFlowBaseTask.cxx
+	AliJFlowCMBTask.cxx
 	AliJCIaaEPTask.cxx
+	AliJSoundsTask.cxx
 )
 
 # Headers from sources

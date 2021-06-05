@@ -46,13 +46,17 @@ public:
     
     void SetClusterTypeEMC(Bool_t flagClsEMC) {fFlagClsTypeEMC = flagClsEMC;};
     void SetClusterTypeDCAL(Bool_t flagClsDCAL) {fFlagClsTypeDCAL = flagClsDCAL;};
-    
+ 
+    void SetRefit(Bool_t Refit){fRefit = Refit;};
+   
     void SetCentralityMim(Int_t centMim) {fcentMim = centMim;};
     void SetCentralityMax(Int_t centMax) {fcentMax = centMax;};
 
     void SetITSchi2(Int_t itschi2){fitschi2 = itschi2;};
     void SetMinSig(Double_t mimSig){fmimSig = mimSig;};
     void SetEopMim(Double_t mimEop){fmimEop = mimEop;};
+    void SetMinM20(Double_t mimM20){fmimM20 = mimM20;};
+    void SetMaxM20(Double_t maxM20){fmaxM20 = maxM20;};
 
     void SetInvMassCut0(Double_t InvmassCut) {fInvmassCut = InvmassCut;};
     void SetInvMassCut1(Double_t ptAssocut) {fptAssocut = ptAssocut;};
@@ -124,11 +128,15 @@ private:
     Bool_t fFlagClsTypeEMC;//switch to select EMC clusters
     Bool_t fFlagClsTypeDCAL;//switch to select DCAL clusters
     
+    Bool_t fRefit;
+  
     Int_t fcentMim; // mim. centrality
     Int_t fcentMax; // max. centrality
     Int_t fitschi2; // max. centrality
     Double_t fmimSig; // max. centrality
     Double_t fmimEop; // max. centrality
+    Double_t fmimM20; // max. centrality
+    Double_t fmaxM20; // max. centrality
     Double_t fInvmassCut;  
     Double_t fptAssocut;  
     Int_t fetarange;  
@@ -185,6 +193,7 @@ private:
     TH2F        *fHistEopHad2;//!pt vs E/p
     TH2F        *fHistEopTrueMC;//!pt vs E/p
     TH2F        *fM20;//!M20 vs pt
+    TH2F        *fM20MC;//!M20 vs pt
     TH2F        *fM02;//!M20 vs pt
     TH2F        *fM20EovP;//!M20 vs E/p
     TH2F        *fM02EovP;//!M20 vs E/p
@@ -257,6 +266,8 @@ private:
 
     TH2D        *fHistResD;
     TH2D        *fHistResB;
+    TH2D        *fHistEffde;
+    TH2D        *fHistEffbe;
     TH1D        *fHistHFEpos;
     TH1D        *fHistHFEneg;
     TH1D        *fHistHFmcCheck;

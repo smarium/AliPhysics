@@ -94,12 +94,23 @@ AliAnalysisTaskGammaTriggerQA::AliAnalysisTaskGammaTriggerQA(): AliAnalysisTaskS
   fProfileEtaShift(NULL),
   fProfileJetJetXSection(NULL),
   fHistoJetJetNTrials(NULL),
+  fTreeList(NULL),
+  fTreeTriggInfo(NULL),
+  fCent(0),
+  fT0Trigg(0),
+  fV0Mult(0),
+  fV0Trigg(0),
+  fTPCMult(0),
+  fSPDHit(0),
+  fSPDTracklet(0),
+  fZVertex(0),
   fEventPlaneAngle(-100),
   fRandom(0),
   fnCuts(0),
   fiCut(0),
   fIsHeavyIon(0),
   fDoLightOutput(kFALSE),
+  fQADetailed(0),
   fIsMC(0),
   fWeightJetJetMC(1),
   fNCurrentClusterBasic(0)
@@ -140,12 +151,23 @@ AliAnalysisTaskGammaTriggerQA::AliAnalysisTaskGammaTriggerQA(const char *name):
   fProfileEtaShift(NULL),
   fProfileJetJetXSection(NULL),
   fHistoJetJetNTrials(NULL),
+  fTreeList(NULL),
+  fTreeTriggInfo(NULL),
+  fCent(0),
+  fT0Trigg(0),
+  fV0Mult(0),
+  fV0Trigg(0),
+  fTPCMult(0),
+  fSPDHit(0),
+  fSPDTracklet(0),
+  fZVertex(0),
   fEventPlaneAngle(-100),
   fRandom(0),
   fnCuts(0),
   fiCut(0),
   fIsHeavyIon(0),
   fDoLightOutput(kFALSE),
+  fQADetailed(0),
   fIsMC(0),
   fWeightJetJetMC(1),
   fNCurrentClusterBasic(0)
@@ -219,6 +241,11 @@ void AliAnalysisTaskGammaTriggerQA::UserCreateOutputObjects(){
     fHistoJetJetNTrials     = new TH1F*[fnCuts];
   }
 
+  if (fQADetailed > 0){
+    fTreeList                 = new TList*[fnCuts];
+    fTreeTriggInfo            = new TTree*[fnCuts];
+  }
+
   fHistoNGoodESDTracks        = new TH1F*[fnCuts];
   fHistoCent                  = new TH1F*[fnCuts];
   fHistoVertexZ               = new TH1F*[fnCuts];
@@ -265,7 +292,7 @@ void AliAnalysisTaskGammaTriggerQA::UserCreateOutputObjects(){
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(7,"SPD Pile-Up");
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(8,"no SDD");
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(9,"no V0AND");
-    fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(10,"EMCAL problems");
+    fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(10,"EMCAL/TPC problems");
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(11,"rejectedForJetJetMC");
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(12,"SPD hits vs tracklet");
     fHistoNEvents[iCut]->GetXaxis()->SetBinLabel(13,"Out-of-Bunch pileup Past-Future");
@@ -419,6 +446,24 @@ void AliAnalysisTaskGammaTriggerQA::UserCreateOutputObjects(){
       fHistoClusGammaPt[iCut]->Sumw2();
       fHistoClusGammaE[iCut]->Sumw2();
     }
+
+    if (fQADetailed > 0){
+      fTreeList[iCut]        = new TList();
+      fTreeList[iCut]->SetName(Form("%s_%s TriggerQA tree", cutstringEvent.Data(), cutstringCalo.Data()));
+      fTreeList[iCut]->SetOwner(kTRUE);
+      fCutFolder[iCut]->Add(fTreeList[iCut]);
+
+      fTreeTriggInfo[iCut]= new TTree("TriggerInfoTree", "TriggerInfoTree");
+      fTreeTriggInfo[iCut]->Branch("Cent",&fCent,"fCent/F");
+      fTreeTriggInfo[iCut]->Branch("T0Trigg",&fT0Trigg,"fT0Trigg/s");
+      fTreeTriggInfo[iCut]->Branch("V0Mult",&fV0Mult,"fV0Mult/i");
+      fTreeTriggInfo[iCut]->Branch("V0Trigg",&fV0Trigg,"fV0Trigg/i");
+      fTreeTriggInfo[iCut]->Branch("TPCMult",&fTPCMult,"fTPCMult/i");
+      fTreeTriggInfo[iCut]->Branch("SPDTrack",&fSPDHit,"fSPDHit/i");
+      fTreeTriggInfo[iCut]->Branch("SPDTracklet",&fSPDTracklet,"fSPDTracklet/i");
+      fTreeTriggInfo[iCut]->Branch("ZVertex",&fZVertex,"fZVertex/F");
+      fTreeList[iCut]->Add(fTreeTriggInfo[iCut]);
+    }
   }
 
 
@@ -490,7 +535,7 @@ void AliAnalysisTaskGammaTriggerQA::UserExec(Option_t *)
   if(fIsMC> 0) fMCEvent = MCEvent();
 
   Int_t eventQuality = ((AliConvEventCuts*)fV0Reader->GetEventCuts())->GetEventQuality();
-  if(fInputEvent->IsIncompleteDAQ()==kTRUE) eventQuality = 2;  // incomplete event
+  if(fInputEvent->IsIncompleteDAQ()==kTRUE || fV0Reader->GetErrorAODRelabeling()) eventQuality = 2;  // incomplete event
   if(eventQuality == 2 || eventQuality == 3){// Event Not Accepted due to MC event missing or wrong trigger for V0ReaderV1 or because it is incomplete
     for(Int_t iCut = 0; iCut<fnCuts; iCut++){
       fHistoNEvents[iCut]->Fill(eventQuality);
@@ -526,7 +571,8 @@ void AliAnalysisTaskGammaTriggerQA::UserExec(Option_t *)
 
     if (fIsMC > 0){
       fWeightJetJetMC       = 1;
-      Bool_t isMCJet        = ((AliConvEventCuts*)fEventCutArray->At(iCut))->IsJetJetMCEventAccepted( fMCEvent, fWeightJetJetMC , fInputEvent);
+      Float_t pthard = -1;
+      Bool_t isMCJet        = ((AliConvEventCuts*)fEventCutArray->At(iCut))->IsJetJetMCEventAccepted( fMCEvent, fWeightJetJetMC ,pthard, fInputEvent);
       if (fIsMC == 3){
         Double_t weightMult   = ((AliConvEventCuts*)fEventCutArray->At(iCut))->GetWeightForMultiplicity(fV0Reader->GetNumberOfPrimaryTracks());
         fWeightJetJetMC       = fWeightJetJetMC*weightMult;
@@ -558,32 +604,44 @@ void AliAnalysisTaskGammaTriggerQA::UserExec(Option_t *)
       continue;
     }
     if (triggered == kTRUE) {
+      // set variables
+      fCent       = ((AliConvEventCuts*)fEventCutArray->At(iCut))->GetCentrality(fInputEvent);
+      if(fInputEvent->IsA()==AliESDEvent::Class()){
+        fT0Trigg    = ((AliESDEvent*)fInputEvent)->GetT0Trig();
+      } else {
+        fT0Trigg    = 0;
+      }
+
+      if(((AliConvEventCuts*)fEventCutArray->At(iCut))->IsHeavyIon() == 2){
+        fV0Mult     = fInputEvent->GetVZEROData()->GetMTotV0A();
+        fV0Trigg    = fInputEvent->GetVZEROData()->GetTriggerChargeA();
+      } else{
+        fV0Mult     = fInputEvent->GetVZEROData()->GetMTotV0A()+fInputEvent->GetVZEROData()->GetMTotV0C();
+        fV0Trigg    = fInputEvent->GetVZEROData()->GetTriggerChargeA()+fInputEvent->GetVZEROData()->GetTriggerChargeC();
+      }
+      fTPCMult      = fV0Reader->GetNumberOfPrimaryTracks();
+      fSPDTracklet  = fInputEvent->GetMultiplicity()->GetNumberOfTracklets();
+      fSPDHit       = fInputEvent->GetNumberOfITSClusters(0)+fInputEvent->GetNumberOfITSClusters(1);
+      fZVertex      = fInputEvent->GetPrimaryVertex()->GetZ();
+
+      // fill histograms
       fHistoNEvents[iCut]->Fill(eventQuality, fWeightJetJetMC); // Should be 0 here
       if (fIsMC>1) fHistoNEventsWOWeight[iCut]->Fill(eventQuality); // Should be 0 here
-      fHistoCent[iCut]->Fill(((AliConvEventCuts*)fEventCutArray->At(iCut))->GetCentrality(fInputEvent), fWeightJetJetMC);
-      fHistoNGoodESDTracks[iCut]->Fill(fV0Reader->GetNumberOfPrimaryTracks(), fWeightJetJetMC);
-      fHistoVertexZ[iCut]->Fill(fInputEvent->GetPrimaryVertex()->GetZ(), fWeightJetJetMC);
+      fHistoCent[iCut]->Fill(fCent, fWeightJetJetMC);
+      fHistoNGoodESDTracks[iCut]->Fill(fTPCMult, fWeightJetJetMC);
+      fHistoVertexZ[iCut]->Fill(fZVertex, fWeightJetJetMC);
       if(!fDoLightOutput){
-        fHistoSPDClusterTrackletBackground[iCut]->Fill(fInputEvent->GetMultiplicity()->GetNumberOfTracklets(),(fInputEvent->GetNumberOfITSClusters(0)+fInputEvent->GetNumberOfITSClusters(1)), fWeightJetJetMC);
-        if(((AliConvEventCuts*)fEventCutArray->At(iCut))->IsHeavyIon() == 2)
-          fHistoNV0Tracks[iCut]->Fill(fInputEvent->GetVZEROData()->GetMTotV0A(), fWeightJetJetMC);
-        else
-          fHistoNV0Tracks[iCut]->Fill(fInputEvent->GetVZEROData()->GetMTotV0A()+fInputEvent->GetVZEROData()->GetMTotV0C(), fWeightJetJetMC);
-
-        if(((AliConvEventCuts*)fEventCutArray->At(iCut))->IsHeavyIon() == 2)
-          fHistoNV0Trigger[iCut]->Fill(fInputEvent->GetVZEROData()->GetTriggerChargeA(), fWeightJetJetMC);
-        else
-          fHistoNV0Trigger[iCut]->Fill(fInputEvent->GetVZEROData()->GetTriggerChargeA()+fInputEvent->GetVZEROData()->GetTriggerChargeC(), fWeightJetJetMC);
-
-        if(((AliConvEventCuts*)fEventCutArray->At(iCut))->IsHeavyIon() == 2)
-          fHistoNV0TriggerTracks[iCut]->Fill(fInputEvent->GetVZEROData()->GetTriggerChargeA(),
-                                             fInputEvent->GetVZEROData()->GetMTotV0A(), fWeightJetJetMC);
-        else
-          fHistoNV0TriggerTracks[iCut]->Fill(fInputEvent->GetVZEROData()->GetTriggerChargeA()+fInputEvent->GetVZEROData()->GetTriggerChargeC(),
-                                             fInputEvent->GetVZEROData()->GetMTotV0A()+fInputEvent->GetVZEROData()->GetMTotV0C(), fWeightJetJetMC);
-
+        fHistoSPDClusterTrackletBackground[iCut]->Fill(fSPDTracklet, fSPDHit, fWeightJetJetMC);
+        fHistoNV0Tracks[iCut]->Fill(fV0Mult, fWeightJetJetMC);
+        fHistoNV0Trigger[iCut]->Fill(fV0Trigg, fWeightJetJetMC);
+        fHistoNV0TriggerTracks[iCut]->Fill(fV0Trigg, fV0Mult, fWeightJetJetMC);
+      }
+      // fill tree
+      if (fQADetailed > 0){
+          fTreeTriggInfo[iCut]->Fill();
       }
     }
+
     if(fIsMC> 0){
       // Process MC Particle
       if(((AliConvEventCuts*)fEventCutArray->At(iCut))->GetSignalRejection() != 0){
@@ -676,7 +734,7 @@ void AliAnalysisTaskGammaTriggerQA::ProcessClusters()
     if(!PhotonCandidate){ delete clus; delete tmpvec; continue;}
 
     // Flag Photon as CaloPhoton
-    PhotonCandidate->SetIsCaloPhoton();
+    PhotonCandidate->SetIsCaloPhoton(((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->GetClusterType());
     PhotonCandidate->SetCaloClusterRef(i);
     PhotonCandidate->SetLeadingCellID(((AliCaloPhotonCuts*)fClusterCutArray->At(fiCut))->FindLargestCellInCluster(clus,fInputEvent));
     fHistoClusGammaPt[fiCut]->Fill(PhotonCandidate->Pt(), fWeightJetJetMC);

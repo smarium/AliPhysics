@@ -30,31 +30,61 @@
 #include <TString.h>
 #include "AliAnalysisTaskEmcalJet.h"
 #include "AliJetContainer.h"
+#include "AliVCluster.h"
 
 class THistManager;
+class TRandom;
 
-namespace EmcalTriggerJets {
+namespace PWGJE {
+
+namespace EMCALJetTasks{
 
 class AliAnalysisTaskEmcalJetEnergyScale : public AliAnalysisTaskEmcalJet {
 public:
+  enum EJetTypeOutliers_t {
+    kOutlierPartJet,
+    kOutlierDetJet
+  };
   AliAnalysisTaskEmcalJetEnergyScale();
   AliAnalysisTaskEmcalJetEnergyScale(const char *name);
   virtual ~AliAnalysisTaskEmcalJetEnergyScale();
 
+
+  AliJetContainer *GetPartLevelJetContainer() const { return GetJetContainer(fNameParticleJets); }
+  AliJetContainer *GetDetLevelJetContainer() const { return GetJetContainer(fNameDetectorJets); }
+  const TString &GetNamePartLevelLets() const { return fNameParticleJets; }
+  const TString &GetNameDetLevelJets() const { return fNameDetectorJets; }
+
   void SetNameDetJetContainer(const char *name)  { fNameDetectorJets = name; }
   void SetNamePartJetContainer(const char *name) { fNameParticleJets = name; }
   void SetTriggerName(const char *name)          { fTriggerSelectionString = name; }
+  void SetFractionResponseClosure(double fraction) { fFractionResponseClosure = fraction; }
+  void SetFillHSparse(Bool_t doFill)             { fFillHSparse = doFill; }
+  void SetEnergyScaleShift(Double_t scaleshift)  { fScaleShift = scaleshift; }
+  void SetUseStandardOutlierRejection(bool doUse) { fUseStandardOutlierRejection = doUse; }
+  void SetDebugMaxJetOutliers(bool doDebug)      { fDebugMaxJetOutliers = doDebug; }
+  void SetJetTypeOutlierCut(EJetTypeOutliers_t jtype) { fJetTypeOutliers = jtype; }
+  void SetRequireSameAcceptance(Bool_t doRequire) { fRequireSameAcceptance = doRequire; }
+
+  void ConfigurePtHard(MCProductionType_t mcprodtype, const TArrayI &pthardbinning, Bool_t doMCFilter, Double_t jetptcut);
+  void ConfigureMinBias(MCProductionType_t mcprodtype);
+  void ConfigureJetSelection(Double_t minJetPtPart, Double_t minJetPtDet, Double_t maxTrackPtPart, Double_t maxTrackPtDet, Double_t maxClusterPt, Double_t minAreaPerc);
 
   static AliAnalysisTaskEmcalJetEnergyScale *AddTaskJetEnergyScale(
     AliJetContainer::EJetType_t       jetType,
+    AliJetContainer::ERecoScheme_t    recoscheme,
+    AliVCluster::VCluUserDefEnergy_t  energydef,
     Double_t                          radius,
     Bool_t                            useDCAL,
-    const char *                      trigger
+    const char *                      namepartcont,
+    const char *                      trigger,
+    const char *                      suffix
   );
 
 protected:
   virtual void UserCreateOutputObjects();
   virtual Bool_t Run(); 
+  virtual Bool_t CheckMCOutliers();
   bool IsSelectEmcalTriggers(const TString &triggerstring) const;
 
 private:
@@ -63,12 +93,22 @@ private:
   TString                     fNameParticleJets;              ///< Name of the MC jet container
   TString                     fTriggerSelectionString;        ///< Trigger selection string
   TString                     fNameTriggerDecisionContainer;  ///< Global trigger decision container
+  Double_t                    fFractionResponseClosure;       ///< Fraction of jets used for response in closure test
+  Bool_t                      fFillHSparse;                   ///< Fill THnSparses
+  Double_t                    fScaleShift;                    ///< Shift of the jet energy scale (fixed)
+  Bool_t                      fRequireSameAcceptance;         ///< Require same acceptance type for det. level and part. level jet in response matrix
+  Bool_t                      fUseStandardOutlierRejection;   ///< Use standard outlier rejection
+  Bool_t                      fDebugMaxJetOutliers;           ///< Debug max jet determination for outlier rejection
+  EJetTypeOutliers_t          fJetTypeOutliers;               ///< Jet type used for outlier detection
+  TRandom                     *fSampleSplitter;               //!<! Sample splitter
 
   AliAnalysisTaskEmcalJetEnergyScale(const AliAnalysisTaskEmcalJetEnergyScale &);
   AliAnalysisTaskEmcalJetEnergyScale &operator=(const AliAnalysisTaskEmcalJetEnergyScale &);
 
   ClassDef(AliAnalysisTaskEmcalJetEnergyScale, 1);
 };
+
+}
 
 }
 #endif // ALIANALYSISTASKEMCALJETENERGYSCALE_H

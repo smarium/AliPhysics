@@ -54,6 +54,7 @@ public:
     kTPCRejPtDepTOFNsigma,
     kTPCNsigmaTOFVetoPtDep,
     kTPCTOFpidLstar,         //cuts for L* in pPb
+    kTPCTOFpidLstar_test1,         //cuts for L* in pPb
     kTPCTOFpidLstar13ppTeV, // cuts for L* pp 13 tev
     kTPCTOFpidLstar13ppTeV_test, // cuts for L* pp 13 tev
     kTPCTOFpidLstar13ppTeV_test1, // cuts for L* pp 13 tev with 3 sigma TOF veto
@@ -66,8 +67,10 @@ public:
     kTPCpidphipp2015,//TPC cuts for phi in pp 13 TeV (LHC15f)
     kTPCTOFpidTunedPbPbTOFveto, // Pb-Pb cuts tuned for Pb-Pb 2010/2011 (TOF veto)
     kTPCTOFpidTunedPbPbTOFneed, // Pb-Pb cuts tuned for Pb-Pb 2010/2011 (TOF needed)
+    kTPCTOFpidTunedPbPbTOFneed_2018, // Pb-Pb cuts tuned for Pb-Pb 2010/2011 (TOF needed)
     kTOFTPCpidKstar,         //cuts for Kstar
     kTOFTPCpidDelta,         //cuts for Delta
+    kTOFTPCpidLstar,         //cuts for Lstar
     kTPCTOFvetoPhiXeXe,      // Pb-Pb cuts tuned for Xe-Xe 2017 with TOF veto & mismatch rejection
     kTPCTOFvetoElRejPhiXeXe, // Pb-Pb cuts tuned for Xe-Xe 2017 with electron rejection
     kTPCTOFPhiXeXe,          // Pb-Pb cuts tuned for Xe-Xe 2017 with TOF veto & strict TPC

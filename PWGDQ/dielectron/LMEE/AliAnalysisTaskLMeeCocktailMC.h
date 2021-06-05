@@ -24,9 +24,15 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     void SetWriteTTree(Bool_t WriteTTree){fWriteTTree = WriteTTree;}
     void SetMaxEta(Float_t maxEta = 0.8){fMaxEta = maxEta;}
     void SetMinPt(Float_t MinPt = 0.2){fMinPt = MinPt;}
+    void SetMaxPt(Float_t MaxPt = 8.0){fMaxPt = MaxPt;}
     void SetResolType(Int_t ResolType = 2){fResolType = ResolType;}
     void SetALTweight(Int_t ALTweightType = 1){fALTweightType = ALTweightType;}
-		void SetpPbResFileName(TString name){ fpPbDataSetName= name; }
+    void SetResFileName(TString name);
+    void SetResFileLocal(Bool_t localres) {fLocalRes = localres; }
+    void SetEffFileName(TString name);
+
+    TH1F *GetEffHisto() {return fhwEffpT;}
+ 
 
     // For resolution smearing (from Theos LightFlavorGenerator)
     TObjArray       *fArr;
@@ -41,7 +47,6 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
   protected:
     AliVEvent*            fInputEvent;                // current event
     AliMCEvent*           fMCEvent;                   // corresponding MC event
-    AliStack*             fMCStack;                   // stack belonging to MC event
     TList*                fOutputContainer;           // Output container
     
     Int_t*                fParticleList;              // array with particle Pdg values
@@ -148,18 +153,23 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     TFile*      fFile;        //! Pointer to input file
     TString     fFileNameDCA;    // Name of the input file (DCA)
     TFile*      fFileDCA;        //! Pointer to input file
-    TString     fFileNameEff;    // Name of the input file (Eff weight)
+    TString     fFileNameEff;    // Name of the input file (Eff)
+    TString     fFileNameEffLocal;    // Name of the input file (Eff)
     TFile*      fFileEff;        //! Pointer to input file
+    TString     fFileNameWM;    // Name of the input file (weight multiplicity)
+    TFile*      fFileWM;        //! Pointer to input file
     TString     fFileNameVPH;    // Name of the input file (VPH)
     TFile*      fFileVPH;        //! Pointer to input file
-		TString     fpPbDataSetName; //Specify multiplicity class and data set for Run 2 pPb data
+    TString     fResolDataSetName; //Specify multiplicity class and data set for Run 2 data
+    Bool_t      fLocalRes;         // Local resolution file
 
     //tree
     TTree*               teeTTree; 
 
     Int_t                 fIsMC;                      // MC flag
-    Float_t              fMaxEta;                      // Max Eta
-    Float_t              fMinPt;
+    Float_t              fMaxEta;                     // Max single electron Eta
+    Float_t              fMinPt;                      // Min single electron Pt
+    Float_t              fMaxPt;                      // Max single electron Pt
     Bool_t               fWriteTTree;
     Int_t              fcollisionSystem;
     Int_t                fResolType;
@@ -169,7 +179,7 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     AliAnalysisTaskLMeeCocktailMC(const AliAnalysisTaskLMeeCocktailMC&); // Prevent copy-construction
     AliAnalysisTaskLMeeCocktailMC &operator=(const AliAnalysisTaskLMeeCocktailMC&); // Prevent assignment
 
-    ClassDef(AliAnalysisTaskLMeeCocktailMC, 1);
+    ClassDef(AliAnalysisTaskLMeeCocktailMC, 2);
 };
 
 #endif

@@ -28,7 +28,7 @@
 /// \param bFillAOD: Bool, keep the new clusters in output file.
 /// \param bMC: Bool, simulation or data.
 /// \param exotic: Bool, remove exotic clusters.
-/// \param name: TString, name of clusterizer: V1, V2, V1Unfold, NxN.
+/// \param name: TString, name of clusterizer: V1, V2, V3 (faster V2), V1Unfold, NxN.
 /// \param trigger: TString, name of triggered events to be analyzed.
 /// \param tm: Bool, perform track matching recalculation.
 /// \param minEcell: float, minimum cell energy entering the cluster.
@@ -40,7 +40,7 @@
 /// \param bRecalE: Bool, recalibrate EMCal energy
 /// \param bBad: Bool, remove bad channels
 /// \param bRecalT: Bool, recalibrate EMCal time
-/// \param bNonLine: Bool, correct cluster non linearity
+/// \param iNonLine: Int, correct cluster non linearity
 /// \param minCen: Integer, minimum centrality, -1 no selection
 /// \param maxCen: Integer, maximum centrality, -1 no selection
 /// \param clusterEnergyCutEvent: Float, in case of event filtering, select events with at least one EMCal cluster with this energy
@@ -54,7 +54,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
                                                        const Bool_t  bFillAOD   = kFALSE,                                                
                                                        const Int_t   bMC        = kFALSE,
                                                        const Bool_t  exotic     = kTRUE,
-                                                       const TString name       = "V1Unfold", // V1, V2, NxN, V1Unfold
+                                                       const TString name       = "V1Unfold", 
                                                        const TString trigger    = "", 
                                                        const Int_t   tm         = 1, 
                                                        const Int_t   minEcell   = 50,
@@ -66,7 +66,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
                                                        const Bool_t  bRecalE    = kTRUE,
                                                        const Bool_t  bBad       = kTRUE,
                                                        const Bool_t  bRecalT    = kTRUE,
-                                                       const Bool_t  bNonLine   = kFALSE,
+                                                       const Int_t   iNonLine   = 0,
                                                        const Int_t   minCen     = -1,
                                                        const Int_t   maxCen     = -1,
                                                        const Float_t clusterEnergyCutEvent = -1,
@@ -100,7 +100,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
   printf("\t Ecell %d, Eseed %d, dT %d, wT %d, minUnf %d, minFrac %d \n",
          minEcell, minEseed,maxDeltaT,timeWindow,minEUnf,minFrac);
   printf("\t recalE %d, bad %d, recalT %d, nonlin %d, minCen %d, maxCen %d, rowDiff %d, colDiff %d, t-card %d, cell update %d \n",
-         bRecalE,bBad,bRecalT,bNonLine,minCen,maxCen,nRowDiff,nColDiff,tCardMimic,cellUpd);
+         bRecalE,bBad,bRecalT,iNonLine,minCen,maxCen,nRowDiff,nColDiff,tCardMimic,cellUpd);
 
   // Create name of task and AOD branch depending on different settings
   TString arrayName = clusArrTit;
@@ -191,6 +191,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
   //
   // Clusterizer type
   //
+  if(name.Contains("V3")) params->SetClusterizerFlag(AliEMCALRecParam::kClusterizerv3); // faster V2
   if(name.Contains("V2")) params->SetClusterizerFlag(AliEMCALRecParam::kClusterizerv2);
   if(name.Contains("V1")) params->SetClusterizerFlag(AliEMCALRecParam::kClusterizerv1);
   if(name.Contains("NxN"))
@@ -236,9 +237,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
 //  
 //  gROOT->LoadMacro("$ALICE_PHYSICS/PWGPP/EMCAL/macros/ConfigureEMCALRecoUtils.C");
 //  
-//  ConfigureEMCALRecoUtils(reco,bMC,exotic,bNonLine,bRecalE,bBad,bRecalT);
-
-  clusterize->ConfigureEMCALRecoUtils(bMC,exotic,bNonLine,bRecalE,bBad,bRecalT);
+  clusterize->ConfigureEMCALRecoUtils(bMC,exotic,iNonLine,bRecalE,bBad,bRecalT);
   
   //-------------------------------------------------------
   // Do track matching after clusterization
@@ -293,6 +292,7 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
   
   //-------------------------------------------------------
   // T-Card cell correlation
+  // See https://alice-notes.web.cern.ch/node/837
   //-------------------------------------------------------
   
   clusterize->SwitchOffTCardCorrelation();
@@ -302,50 +302,64 @@ AliAnalysisTaskEMCALClusterize* AddTaskEMCALClusterize(const char  * clusArrTit 
     if ( tCardMimic == 1 ) clusterize->SwitchOnTCardCorrelation(kFALSE);
     else                   clusterize->SwitchOnTCardCorrelation(kTRUE);
         
-    // Parameters setting
-    // See related EMCal meeting presentation, 14th december 2017, case E in  slide 13 of:
-    // https://indico.cern.ch/event/650299/contributions/2645134/subcontributions/244024/attachments/1575981/2496596/ShowerShapes_pp7TeV_ClusterV1_MCvsData_TCardMimic_EMCalMeeting141217.pdf
+    // Parameters setting    
+    // Optional emulation, all SM have cross talk all the time
+    for(Int_t ism = 0; ism < 22; ism++)
+      clusterize->SetInducedEnergyLossProbabilityPerSM(1.0, ism);
     
-    // Cell E dependent parametrization, pol1
-    // Set the same for all SM
-    Float_t mu1 = 2.20/100./1.10; 
-    Float_t mu2 =-0.09/100.;
-    clusterize->SetInducedEnergyLossFraction  (mu1, mu1, mu1, 0.); // constant
-    clusterize->SetInducedEnergyLossFractionP1(mu2, mu2, mu2, 0.); // slope
-    
-    // Absolute min E fraction
-    // Set the same for all SM
-    Float_t mu1Min = 0.80/100.;
-    for(Int_t ism = 0; ism < 20; ism++)
-      clusterize->SetInducedEnergyLossMinimumFractionPerSM(mu1Min,ism);
-    
-    // Absolute max E fraction
-    // Set the same for all SM
-    Float_t mu1Max = 2.50/100.;
-    for(Int_t ism = 0; ism < 20; ism++)
-      clusterize->SetInducedEnergyLossMaximumFractionPerSM(mu1Max,ism);
-    
-    clusterize->SetInducedTCardMinimumCellEnergy(0) ;
+    clusterize->SetInducedTCardMinimumCellEnergy(0.01) ;
     clusterize->SetInducedTCardMaximum(100) ;
+    clusterize->SetInducedTCardMaximumLowE(-1);
+    clusterize->SetInducedTCardMinimum(0.1);
     
-    // No randomization of the previosly set parameters
-    clusterize->SwitchOffRandomizeTCardInducedEnergy() ;
-    clusterize->SetInducedEnergyLossFractionWidth(0., 0., 0., 0.);
+    clusterize->SwitchOnRandomizeTCardInducedEnergy() ;
     
-    // Set the fraction of events where an SM shows different behavior from default
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.30, 0);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.60, 1);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.50, 2);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(1.00, 3);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.35, 4);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.25, 5);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.35, 6);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(1.00, 7);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.25, 8);
-    clusterize->SetInducedEnergyLossProbabilityPerSM(0.25, 9);
+    clusterize->SetInducedEnergyLossMinimumFraction(0.35/100.);
+    clusterize->SetInducedEnergyLossMaximumFraction(1.6/100.);
     
-    for(Int_t ism = 10; ism < 20; ism++)
-      clusterize->SetInducedEnergyLossProbabilityPerSM(0., ism);
+    // SM0,4,5,6,8,9,12,13,14,15,16,17,18,19 (set it first for all SM equal)
+    Float_t mu1 = 0.80/100.;
+    Float_t mu2 =-0.11/100.;
+    Float_t wid = 0.50/100.;
+    clusterize->SetInducedEnergyLossFraction  (mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1(mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossFractionWidth(wid,wid,wid,0.00000);
+    
+    // SM3,7
+    mu1 = 1.20/100.;
+    mu2 =-0.11/100.;
+    clusterize->SetInducedEnergyLossFractionPerSM  (3,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(3,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.6/100.,3);
+    clusterize->SetInducedEnergyLossMaximumFractionPerSM(1.8/100.,3);
+    
+    mu1 = 1.20/100.;
+    mu2 =-0.11/100.;
+    clusterize->SetInducedEnergyLossFractionPerSM  (7,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(7,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.6/100.,7);
+    clusterize->SetInducedEnergyLossMaximumFractionPerSM(1.8/100.,7);
+    
+    // SM1,2,10,11
+    mu1 = 1.20/100.;
+    mu2 =-0.11/100.;
+    clusterize->SetInducedEnergyLossFractionPerSM  (1,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(1,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.5/100.,1);
+ 
+    clusterize->SetInducedEnergyLossFractionPerSM  (10,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(10,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.5/100.,10);
+    
+    clusterize->SetInducedEnergyLossFractionPerSM  (11,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(11,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.5/100.,11);
+    
+    mu1 = 1.15/100.;
+    mu2 =-0.11/100.;
+    clusterize->SetInducedEnergyLossFractionPerSM  (2,mu1, mu1, mu1, 0.00000);
+    clusterize->SetInducedEnergyLossFractionP1PerSM(2,mu2, mu2, mu2, 0.00000); 
+    clusterize->SetInducedEnergyLossMinimumFractionPerSM(0.45/100.,2);
   }
   
   //-------------------------------------------------------

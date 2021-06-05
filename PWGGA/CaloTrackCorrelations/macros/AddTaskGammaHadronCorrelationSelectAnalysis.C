@@ -22,18 +22,21 @@
 
 #if !defined(__CINT__) || defined(__MAKECINT__)
 
+// ROOT
 #include <TString.h>
 #include <TSystem.h>
 #include <TROOT.h>
 
-#include <TString.h>
-#include <TSystem.h>
-#include <TROOT.h>
-
+// Analysis
 #include "AliAnalysisTaskCaloTrackCorrelation.h"
-#include "AddTaskCaloTrackCorrBase.C"
-#include "ConfigureCaloTrackCorrAnalysis.C"
+#include "AliAnaCaloTrackCorrMaker.h"
+#include "AliIsolationCut.h"
 
+// Macros
+R__ADD_INCLUDE_PATH($ALICE_PHYSICS)
+#include "PWGGA/CaloTrackCorrelations/macros/AddTaskCaloTrackCorrBase.C"
+#include "PWGGA/CaloTrackCorrelations/macros/ConfigureCaloTrackCorrAnalysis.C"
+#include "PWGGA/CaloTrackCorrelations/macros/GetAlienGlobalProductionVariables.C"
 #endif
 
 ///
@@ -46,7 +49,7 @@
 /// \param year: The year the data was taken, used to configure some histograms
 /// \param col: A string with the colliding system
 /// \param period: A string with data period 
-/// \param rejectEMCTrig : An int to reject EMCal triggered events with bad trigger: 0 no rejection, 1 old runs L1 bit, 2 newer runs L1 bit
+/// \param rejectEMCTrig : An int to reject EMCal triggered events with bad trigger: 0 no rejection, 1 old runs L1 bit, 2 newer runs L1 bit, 3 EMCal Trigger Maker
 /// \param clustersArray : A string with the array of clusters not being the default (default is empty string)
 /// \param gloCutsString : A string with list of global cuts/parameters ("Smearing","SPDPileUp")
 /// \param nonLinOn : A bool to set the use of the non linearity correction
@@ -98,12 +101,19 @@ AliAnalysisTaskCaloTrackCorrelation * AddTaskGammaHadronCorrelationSelectAnalysi
  const char *trigSuffix = "EMC7"
 )
 {
+  printf("AddTaskGammaHadronCorrelationSelectAnalysis::Start configuration\n");
+
+#if defined(__CINT__)
+  
+  printf("AddTaskGammaHadronCorrelationSelectAnalysis::Load macros\n");
   // Load macros
   //
   gROOT->LoadMacro("$ALICE_PHYSICS/PWGGA/CaloTrackCorrelations/macros/AddTaskCaloTrackCorrBase.C");
   gROOT->LoadMacro("$ALICE_PHYSICS/PWGGA/CaloTrackCorrelations/macros/ConfigureCaloTrackCorrAnalysis.C");
   gROOT->LoadMacro("$ALICE_PHYSICS/PWGGA/CaloTrackCorrelations/macros/GetAlienGlobalProductionVariables.C");
-  
+
+#endif
+
   // First check the ALIEN environment settings
   //
   GetAlienGlobalProductionVariables(simulation,col,period,year,kTRUE);
@@ -127,7 +137,9 @@ AliAnalysisTaskCaloTrackCorrelation * AddTaskGammaHadronCorrelationSelectAnalysi
   ConfigureCaloTrackCorrAnalysis
   ( anaList, calorimeter, simulation, year, col, analysisString, "", 
    shshMax, isoCone, isoConeMin, isoPtTh, isoMethod, isoContent,
-   leading, tm, mixOn, printSettings, debug);
+   leading, tm, mixOn, printSettings, debug, trigSuffix);
+  
+  printf("AddTaskGammaHadronCorrelationSelectAnalysis::End configuration\n");
   
   return task;
 }

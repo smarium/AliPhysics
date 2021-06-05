@@ -15,7 +15,7 @@ using namespace std;
 ClassImp(AliCascadeResult);
 //________________________________________________________________
 AliCascadeResult::AliCascadeResult() :
-  AliVWeakResult(),
+AliVWeakResult(),
 fMassHypo(AliCascadeResult::kXiMinus),
 fhNCentBounds(-1),
 fhCentBins(0x0),
@@ -59,14 +59,21 @@ fSwapBachCharge(kFALSE),
 fSwapBaryon(kFALSE),
 fSwapV0MesonCharge(kFALSE),
 fSwapV0BaryonCharge(kFALSE),
-fCutUseITSRefitTracks(kFALSE),
 fCutUse276TeVV0CosPA(kFALSE),
 fCutUseTOFUnchecked(kFALSE),
+fCutUseITSRefitTracks(kFALSE),
+fCutUseITSRefitNegative(kFALSE),
+fCutUseITSRefitPositive(kFALSE),
+fCutUseITSRefitBachelor(kFALSE),
 fCutLeastNumberOfClusters(70),
 fCutMinEtaTracks(-0.8),
 fCutMaxEtaTracks(+0.8),
 fCutMaxChi2PerCluster(1e+5),
 fCutMinTrackLength(-1),
+fCutUseParametricLength(kFALSE),
+fCutLeastNumberOfCrossedRows(-1),
+fCutMinCrossedRowsOverLength(-1),
+
 fCutUseVariableCascCosPA(kFALSE),
 fCutVarCascCosPA_Exp0Const(0),
 fCutVarCascCosPA_Exp0Slope(0),
@@ -94,7 +101,11 @@ fCutVarDCACascDau_Const(1),
 fCutDCACascadeToPV(1e+3),
 fCutDCANegToPVWeighted(-1),
 fCutDCAPosToPVWeighted(-1),
-fCutDCABachToPVWeighted(-1)
+fCutDCABachToPVWeighted(-1),
+fCutAtLeastOneTOF(kFALSE),
+fCutITSorTOF(kFALSE),
+fCutIsCowboy(0),
+fCutIsCascadeCowboy(0)
 {
     // Dummy Constructor - not to be used!
     fhNCentBounds = 21;
@@ -159,14 +170,20 @@ fSwapBachCharge(kFALSE),
 fSwapBaryon(kFALSE),
 fSwapV0MesonCharge(kFALSE),
 fSwapV0BaryonCharge(kFALSE),
-fCutUseITSRefitTracks(kFALSE),
 fCutUse276TeVV0CosPA(kFALSE),
 fCutUseTOFUnchecked(kFALSE),
+fCutUseITSRefitTracks(kFALSE),
+fCutUseITSRefitNegative(kFALSE),
+fCutUseITSRefitPositive(kFALSE),
+fCutUseITSRefitBachelor(kFALSE),
 fCutLeastNumberOfClusters(70),
 fCutMinEtaTracks(-0.8),
 fCutMaxEtaTracks(+0.8),
 fCutMaxChi2PerCluster(1e+5),
 fCutMinTrackLength(-1),
+fCutUseParametricLength(kFALSE),
+fCutLeastNumberOfCrossedRows(-1),
+fCutMinCrossedRowsOverLength(-1),
 fCutUseVariableCascCosPA(kFALSE),
 fCutVarCascCosPA_Exp0Const(0),
 fCutVarCascCosPA_Exp0Slope(0),
@@ -194,7 +211,11 @@ fCutVarDCACascDau_Const(1),
 fCutDCACascadeToPV(1e+3),
 fCutDCANegToPVWeighted(-1),
 fCutDCAPosToPVWeighted(-1),
-fCutDCABachToPVWeighted(-1)
+fCutDCABachToPVWeighted(-1),
+fCutAtLeastOneTOF(kFALSE),
+fCutITSorTOF(kFALSE),
+fCutIsCowboy(0),
+fCutIsCascadeCowboy(0)
 {
     // Named constructor
     fhNCentBounds = 21;
@@ -259,14 +280,20 @@ fSwapBachCharge(kFALSE),
 fSwapBaryon(kFALSE),
 fSwapV0MesonCharge(kFALSE),
 fSwapV0BaryonCharge(kFALSE),
-fCutUseITSRefitTracks(kFALSE),
 fCutUse276TeVV0CosPA(kFALSE),
 fCutUseTOFUnchecked(kFALSE),
+fCutUseITSRefitTracks(kFALSE),
+fCutUseITSRefitNegative(kFALSE),
+fCutUseITSRefitPositive(kFALSE),
+fCutUseITSRefitBachelor(kFALSE),
 fCutLeastNumberOfClusters(70),
 fCutMinEtaTracks(-0.8),
 fCutMaxEtaTracks(+0.8),
 fCutMaxChi2PerCluster(1e+5),
 fCutMinTrackLength(-1),
+fCutUseParametricLength(kFALSE),
+fCutLeastNumberOfCrossedRows(-1),
+fCutMinCrossedRowsOverLength(-1),
 fCutUseVariableCascCosPA(kFALSE),
 fCutVarCascCosPA_Exp0Const(0),
 fCutVarCascCosPA_Exp0Slope(0),
@@ -294,7 +321,11 @@ fCutVarDCACascDau_Const(1),
 fCutDCACascadeToPV(1e+3),
 fCutDCANegToPVWeighted(-1),
 fCutDCAPosToPVWeighted(-1),
-fCutDCABachToPVWeighted(-1)
+fCutDCABachToPVWeighted(-1),
+fCutAtLeastOneTOF(kFALSE),
+fCutITSorTOF(kFALSE),
+fCutIsCowboy(0),
+fCutIsCascadeCowboy(0)
 {
     //centrality binning assignment
     fhNCentBounds = lNCentBins+1;
@@ -359,14 +390,20 @@ fSwapBachCharge(kFALSE),
 fSwapBaryon(kFALSE),
 fSwapV0MesonCharge(kFALSE),
 fSwapV0BaryonCharge(kFALSE),
-fCutUseITSRefitTracks(kFALSE),
 fCutUse276TeVV0CosPA(kFALSE),
 fCutUseTOFUnchecked(kFALSE),
+fCutUseITSRefitTracks(kFALSE),
+fCutUseITSRefitNegative(kFALSE),
+fCutUseITSRefitPositive(kFALSE),
+fCutUseITSRefitBachelor(kFALSE),
 fCutLeastNumberOfClusters(70),
 fCutMinEtaTracks(-0.8),
 fCutMaxEtaTracks(+0.8),
 fCutMaxChi2PerCluster(1e+5),
 fCutMinTrackLength(-1),
+fCutUseParametricLength(kFALSE),
+fCutLeastNumberOfCrossedRows(-1),
+fCutMinCrossedRowsOverLength(-1),
 fCutUseVariableCascCosPA(kFALSE),
 fCutVarCascCosPA_Exp0Const(0),
 fCutVarCascCosPA_Exp0Slope(0),
@@ -394,7 +431,11 @@ fCutVarDCACascDau_Const(1),
 fCutDCACascadeToPV(1e+3),
 fCutDCANegToPVWeighted(-1),
 fCutDCAPosToPVWeighted(-1),
-fCutDCABachToPVWeighted(-1)
+fCutDCABachToPVWeighted(-1),
+fCutAtLeastOneTOF(kFALSE),
+fCutITSorTOF(kFALSE),
+fCutIsCowboy(0),
+fCutIsCascadeCowboy(0)
 {
     //centrality binning assignment
     fhNCentBounds = lNCentBins+1;
@@ -463,11 +504,17 @@ fCutUse276TeVV0CosPA(lCopyMe.fCutUse276TeVV0CosPA),
 fCutUseTOFUnchecked(lCopyMe.fCutUseTOFUnchecked),
 //Track selections
 fCutUseITSRefitTracks(lCopyMe.fCutUseITSRefitTracks),
+fCutUseITSRefitNegative(lCopyMe.fCutUseITSRefitNegative),
+fCutUseITSRefitPositive(lCopyMe.fCutUseITSRefitPositive),
+fCutUseITSRefitBachelor(lCopyMe.fCutUseITSRefitBachelor),
 fCutLeastNumberOfClusters(lCopyMe.fCutLeastNumberOfClusters),
 fCutMinEtaTracks(lCopyMe.fCutMinEtaTracks),
 fCutMaxEtaTracks(lCopyMe.fCutMaxEtaTracks),
 fCutMaxChi2PerCluster(lCopyMe.fCutMaxChi2PerCluster),
 fCutMinTrackLength(lCopyMe.fCutMinTrackLength),
+fCutUseParametricLength(lCopyMe.fCutUseParametricLength),
+fCutLeastNumberOfCrossedRows(lCopyMe.fCutLeastNumberOfCrossedRows),
+fCutMinCrossedRowsOverLength(lCopyMe.fCutMinCrossedRowsOverLength),
 
 fCutUseVariableCascCosPA(lCopyMe.fCutUseVariableCascCosPA),
 fCutVarCascCosPA_Exp0Const(lCopyMe.fCutVarCascCosPA_Exp0Const),
@@ -496,7 +543,11 @@ fCutVarDCACascDau_Const(lCopyMe.fCutVarDCACascDau_Const),
 fCutDCACascadeToPV(lCopyMe.fCutDCACascadeToPV),
 fCutDCANegToPVWeighted(lCopyMe.fCutDCANegToPVWeighted),
 fCutDCAPosToPVWeighted(lCopyMe.fCutDCAPosToPVWeighted),
-fCutDCABachToPVWeighted(lCopyMe.fCutDCABachToPVWeighted)
+fCutDCABachToPVWeighted(lCopyMe.fCutDCABachToPVWeighted),
+fCutAtLeastOneTOF(lCopyMe.fCutAtLeastOneTOF),
+fCutITSorTOF(lCopyMe.fCutITSorTOF),
+fCutIsCowboy(lCopyMe.fCutIsCowboy),
+fCutIsCascadeCowboy(lCopyMe.fCutIsCascadeCowboy)
 
 {
     SetName( lNewName.Data() );
@@ -528,8 +579,8 @@ fCutDCABachToPVWeighted(lCopyMe.fCutDCABachToPVWeighted)
 }
 //________________________________________________________________
 AliCascadeResult::AliCascadeResult(AliCascadeResult *lCopyMe, TString lNewName)
-    : AliVWeakResult(*lCopyMe),
-      fHisto(0), fProtonProfile(0)
+: AliVWeakResult(*lCopyMe),
+fHisto(0), fProtonProfile(0)
 {
     SetName(lNewName.Data());
     fMassHypo = lCopyMe->GetMassHypothesis();
@@ -585,11 +636,17 @@ AliCascadeResult::AliCascadeResult(AliCascadeResult *lCopyMe, TString lNewName)
     
     //Track cuts
     fCutUseITSRefitTracks    = lCopyMe -> GetCutUseITSRefitTracks();
+    fCutUseITSRefitNegative  = lCopyMe -> GetCutUseITSRefitNegative();
+    fCutUseITSRefitPositive  = lCopyMe -> GetCutUseITSRefitPositive();
+    fCutUseITSRefitBachelor  = lCopyMe -> GetCutUseITSRefitBachelor();
     fCutLeastNumberOfClusters= lCopyMe -> GetCutLeastNumberOfClusters();
     fCutMinEtaTracks = lCopyMe -> GetCutMinEtaTracks();
     fCutMaxEtaTracks = lCopyMe -> GetCutMaxEtaTracks();
     fCutMaxChi2PerCluster = lCopyMe -> GetCutMaxChi2PerCluster();
     fCutMinTrackLength = lCopyMe -> GetCutMinTrackLength();
+    fCutUseParametricLength = lCopyMe -> GetCutUseParametricLength();
+    fCutLeastNumberOfCrossedRows = lCopyMe->GetCutLeastNumberOfCrossedRows();
+    fCutMinCrossedRowsOverLength = lCopyMe->GetCutMinCrossedRowsOverLength();
     
     //Variable CascCosPA
     fCutUseVariableCascCosPA = lCopyMe -> GetCutUseVarCascCosPA();
@@ -598,7 +655,7 @@ AliCascadeResult::AliCascadeResult(AliCascadeResult *lCopyMe, TString lNewName)
     fCutVarCascCosPA_Exp1Const = lCopyMe -> GetCutVarCascCosPAExp1Const();
     fCutVarCascCosPA_Exp1Slope = lCopyMe -> GetCutVarCascCosPAExp1Slope();
     fCutVarCascCosPA_Const = lCopyMe -> GetCutVarCascCosPAConst();
-
+    
     //Variable V0CosPA
     fCutUseVariableV0CosPA = lCopyMe -> GetCutUseVarV0CosPA();
     fCutVarV0CosPA_Exp0Const = lCopyMe -> GetCutVarV0CosPAExp0Const();
@@ -627,6 +684,12 @@ AliCascadeResult::AliCascadeResult(AliCascadeResult *lCopyMe, TString lNewName)
     fCutDCANegToPVWeighted  = lCopyMe -> GetCutDCANegToPVWeighted();
     fCutDCAPosToPVWeighted  = lCopyMe -> GetCutDCAPosToPVWeighted();
     fCutDCABachToPVWeighted = lCopyMe -> GetCutDCABachToPVWeighted();
+    
+    fCutAtLeastOneTOF = lCopyMe -> GetCutAtLeastOneTOF();
+    fCutITSorTOF = lCopyMe -> GetCutITSorTOF(); 
+    
+    fCutIsCowboy = lCopyMe -> GetCutIsCowboy();
+    fCutIsCascadeCowboy = lCopyMe -> GetCutIsCascadeCowboy();
     
     // Constructor
     Double_t lThisMass = GetMass();
@@ -677,7 +740,7 @@ AliCascadeResult& AliCascadeResult::operator=(const AliCascadeResult& lCopyMe)
     if (&lCopyMe == this) return *this;
     SetName(lCopyMe.GetName());
     SetTitle(lCopyMe.GetTitle());
-
+    
     fMassHypo = lCopyMe.GetMassHypothesis();
     //Binning matters
     fhNCentBounds = lCopyMe.GetNCentBins()+1;
@@ -731,11 +794,17 @@ AliCascadeResult& AliCascadeResult::operator=(const AliCascadeResult& lCopyMe)
     
     //Track cuts
     fCutUseITSRefitTracks = lCopyMe.GetCutUseITSRefitTracks();
+    fCutUseITSRefitNegative  = lCopyMe.GetCutUseITSRefitNegative();
+    fCutUseITSRefitPositive  = lCopyMe.GetCutUseITSRefitPositive();
+    fCutUseITSRefitBachelor  = lCopyMe.GetCutUseITSRefitBachelor();
     fCutLeastNumberOfClusters = lCopyMe.GetCutLeastNumberOfClusters();
     fCutMinEtaTracks = lCopyMe.GetCutMinEtaTracks();
     fCutMaxEtaTracks = lCopyMe.GetCutMaxEtaTracks();
     fCutMaxChi2PerCluster = lCopyMe.GetCutMaxChi2PerCluster();
     fCutMinTrackLength = lCopyMe.GetCutMinTrackLength();
+    fCutUseParametricLength = lCopyMe.GetCutUseParametricLength();
+    fCutLeastNumberOfCrossedRows = lCopyMe.GetCutLeastNumberOfCrossedRows();
+    fCutMinCrossedRowsOverLength = lCopyMe.GetCutMinCrossedRowsOverLength();
     
     //Variable CascCosPA
     fCutUseVariableCascCosPA = lCopyMe.GetCutUseVarCascCosPA();
@@ -744,7 +813,7 @@ AliCascadeResult& AliCascadeResult::operator=(const AliCascadeResult& lCopyMe)
     fCutVarCascCosPA_Exp1Const = lCopyMe.GetCutVarCascCosPAExp1Const();
     fCutVarCascCosPA_Exp1Slope = lCopyMe.GetCutVarCascCosPAExp1Slope();
     fCutVarCascCosPA_Const = lCopyMe.GetCutVarCascCosPAConst();
-
+    
     //Variable V0CosPA
     fCutUseVariableV0CosPA = lCopyMe.GetCutUseVarV0CosPA();
     fCutVarV0CosPA_Exp0Const = lCopyMe.GetCutVarV0CosPAExp0Const();
@@ -773,6 +842,12 @@ AliCascadeResult& AliCascadeResult::operator=(const AliCascadeResult& lCopyMe)
     fCutDCANegToPVWeighted  = lCopyMe.GetCutDCANegToPVWeighted();
     fCutDCAPosToPVWeighted  = lCopyMe.GetCutDCAPosToPVWeighted();
     fCutDCABachToPVWeighted = lCopyMe.GetCutDCABachToPVWeighted();
+    
+    fCutAtLeastOneTOF = lCopyMe.GetCutAtLeastOneTOF();
+    fCutITSorTOF = lCopyMe.GetCutITSorTOF(); 
+    
+    fCutIsCowboy = lCopyMe.GetCutIsCowboy();
+    fCutIsCascadeCowboy = lCopyMe.GetCutIsCascadeCowboy();
     
     if (fhCentBins) {
         delete [] fhCentBins;
@@ -829,7 +904,9 @@ Long64_t AliCascadeResult::Merge(TCollection *hlist)
         while ((xh = (AliCascadeResult *) nxh())) {
             // Check if you're not committing a crime
             if( ! HasSameCuts( xh ) ){
-                AliFatal("FATAL: you're trying to sum output that was obtained with different selections!");
+                
+                AliFatal(Form("FATAL: you're trying to sum output that was obtained with different selections! Offending object: %s",GetName()));
+                
             }
             //... if all fine, add this histogram
             if ( GetHistogram() && xh->GetHistogram() )
@@ -858,7 +935,7 @@ Bool_t AliCascadeResult::HasSameCuts(AliVWeakResult *lCompare, Bool_t lCheckdEdx
     AliCascadeResult *lCompareCascade = (AliCascadeResult*) lCompare;
     
     if( fMassHypo != lCompareCascade->GetMassHypothesis() ) lReturnValue = kFALSE;
-
+    
     //Acceptance
     if( TMath::Abs( fCutMinRapidity - lCompareCascade->GetCutMinRapidity() ) > 1e-6 ) lReturnValue = kFALSE;
     if( TMath::Abs( fCutMaxRapidity - lCompareCascade->GetCutMaxRapidity() ) > 1e-6 ) lReturnValue = kFALSE;
@@ -890,6 +967,9 @@ Bool_t AliCascadeResult::HasSameCuts(AliVWeakResult *lCompare, Bool_t lCheckdEdx
     //Track cuts
     if( TMath::Abs( fCutLeastNumberOfClusters - lCompareCascade->GetCutLeastNumberOfClusters() ) > 1e-6 ) lReturnValue = kFALSE;
     if( TMath::Abs( fCutUseITSRefitTracks - lCompareCascade->GetCutUseITSRefitTracks() ) > 1e-6 ) lReturnValue = kFALSE;
+    if( TMath::Abs( fCutUseITSRefitNegative - lCompareCascade->GetCutUseITSRefitNegative() ) > 1e-6 ) lReturnValue = kFALSE;
+    if( TMath::Abs( fCutUseITSRefitPositive - lCompareCascade->GetCutUseITSRefitPositive() ) > 1e-6 ) lReturnValue = kFALSE;
+    if( TMath::Abs( fCutUseITSRefitBachelor - lCompareCascade->GetCutUseITSRefitBachelor() ) > 1e-6 ) lReturnValue = kFALSE;
     
     //Check if parametric V0 CosPA (as in 2.76 analysis) used
     if( fCutUse276TeVV0CosPA != lCompareCascade->GetCutUse276TeVV0CosPA() ) lReturnValue = kFALSE;
@@ -900,6 +980,10 @@ Bool_t AliCascadeResult::HasSameCuts(AliVWeakResult *lCompare, Bool_t lCheckdEdx
     if( TMath::Abs( fCutMaxEtaTracks - lCompareCascade->GetCutMaxEtaTracks() ) > 1e-6 ) lReturnValue = kFALSE;
     if( TMath::Abs( fCutMaxChi2PerCluster - lCompareCascade->GetCutMaxChi2PerCluster() ) > 1e-6 ) lReturnValue = kFALSE;
     if( TMath::Abs( fCutMinTrackLength - lCompareCascade->GetCutMinTrackLength() ) > 1e-6 ) lReturnValue = kFALSE;
+    
+    if( TMath::Abs( fCutUseParametricLength - lCompareCascade->GetCutUseParametricLength() ) > 1e-6 ) lReturnValue = kFALSE;
+    if( TMath::Abs( fCutLeastNumberOfCrossedRows - lCompareCascade->GetCutLeastNumberOfCrossedRows() ) > 1e-6 ) lReturnValue = kFALSE;
+    if( TMath::Abs( fCutMinCrossedRowsOverLength - lCompareCascade->GetCutMinCrossedRowsOverLength() ) > 1e-6 ) lReturnValue = kFALSE;
     
     //Variable CascCosPA
     if ( TMath::Abs(fCutUseVariableCascCosPA - lCompareCascade->GetCutUseVarCascCosPA()) > 1e-6 ) lReturnValue = kFALSE;
@@ -938,6 +1022,12 @@ Bool_t AliCascadeResult::HasSameCuts(AliVWeakResult *lCompare, Bool_t lCheckdEdx
     if ( TMath::Abs(fCutDCAPosToPVWeighted   - lCompareCascade->GetCutDCAPosToPVWeighted()) > 1e-6 ) lReturnValue = kFALSE;
     if ( TMath::Abs(fCutDCABachToPVWeighted  - lCompareCascade->GetCutDCABachToPVWeighted()) > 1e-6 ) lReturnValue = kFALSE;
     
+    if ( TMath::Abs(fCutAtLeastOneTOF - lCompareCascade->GetCutAtLeastOneTOF()) > 1e-6 ) lReturnValue = kFALSE;
+    if ( TMath::Abs(fCutITSorTOF - lCompareCascade->GetCutITSorTOF()) > 1e-6 ) lReturnValue = kFALSE;
+    
+    if ( TMath::Abs(fCutIsCowboy - lCompareCascade->GetCutIsCowboy()) > 1e-6 ) lReturnValue = kFALSE;
+    if ( TMath::Abs(fCutIsCascadeCowboy - lCompareCascade->GetCutIsCascadeCowboy()) > 1e-6 ) lReturnValue = kFALSE;
+    
     return lReturnValue;
 }
 //________________________________________________________________
@@ -958,7 +1048,7 @@ void AliCascadeResult::Print()
     if( fMassHypo == AliCascadeResult::kXiPlus       ) cout<<" Mass Hypothesis....: XiPlus"<<endl;
     if( fMassHypo == AliCascadeResult::kOmegaMinus   ) cout<<" Mass Hypothesis....: OmegaMinus"<<endl;
     if( fMassHypo == AliCascadeResult::kOmegaPlus    ) cout<<" Mass Hypothesis....: OmegaPlus"<<endl;
-    cout<<" Expected mass......: "<<GetMass()<<endl; 
+    cout<<" Expected mass......: "<<GetMass()<<endl;
     cout<<" Min y..............: "<<fCutMinRapidity<<endl;
     cout<<" Max y..............: "<<fCutMaxRapidity<<endl;
     
@@ -1018,11 +1108,17 @@ void AliCascadeResult::Print()
     cout<<" Xi Rej (for Omega).: "<<fCutXiRejection<<endl;
     cout<<" Use 2.76TeV v0cospa: "<<fCutUse276TeVV0CosPA<<endl;
     cout<<" Use ITSref tracks..: "<<fCutUseITSRefitTracks<<endl;
+    cout<<" Use ITSref neg.....: "<<fCutUseITSRefitNegative<<endl;
+    cout<<" Use ITSref pos.....: "<<fCutUseITSRefitPositive<<endl;
+    cout<<" Use ITSref bach.....: "<<fCutUseITSRefitBachelor<<endl;
     cout<<" Nbr Clusters.......: "<<fCutLeastNumberOfClusters<<endl;
     cout<<" Min track eta......: "<<fCutMinEtaTracks<<endl;
     cout<<" Max track eta......: "<<fCutMaxEtaTracks<<endl;
     cout<<" Max chi2/cluster...: "<<fCutMaxChi2PerCluster<<endl;
     cout<<" Min Track Length...: "<<fCutMinTrackLength<<endl;
+    cout<<" Param Track Length.: "<<fCutUseParametricLength<<endl;
+    cout<<" N(crossed rows)....: "<<fCutLeastNumberOfCrossedRows<<endl;
+    cout<<" N(cr)/length.......: "<<fCutMinCrossedRowsOverLength<<endl;
     
     cout<<" MC PDG Association.: "<<fCutMCPDGCodeAssociation<<endl;
     cout<<" MC Phys Primary....: "<<fCutMCPhysicalPrimary<<endl;
@@ -1030,7 +1126,7 @@ void AliCascadeResult::Print()
     cout<<" MC Select bump.....: "<<fCutMCSelectBump<<endl;
     
     cout<<" Swap bach charge...: "<<fSwapBachCharge<<endl;
-    cout<<" Swap lam/lambar....: "<<fSwapBaryon<<endl; 
+    cout<<" Swap lam/lambar....: "<<fSwapBaryon<<endl;
     cout<<" Swap v0 mes charge.: "<<fSwapV0MesonCharge<<endl;
     cout<<" Swap v0 bar charge.: "<<fSwapV0BaryonCharge<<endl;
     
@@ -1038,6 +1134,11 @@ void AliCascadeResult::Print()
     cout<<" wDCA Neg to PV.....: "<<fCutDCANegToPVWeighted<<endl;
     cout<<" wDCA Pos to PV.....: "<<fCutDCAPosToPVWeighted<<endl;
     cout<<" wDCA Bach to PV....: "<<fCutDCABachToPVWeighted<<endl;
+    cout<<" At least 1 tof.....: "<<fCutAtLeastOneTOF<<endl;
+    cout<<" ITS||TOF...........: "<<fCutITSorTOF<<endl; 
+    
+    cout<<" Is cowboy..........: "<<fCutIsCowboy<<endl;
+    cout<<" Is cascade cowboy..: "<<fCutIsCascadeCowboy<<endl;
     cout<<"========================================"<<endl;
     return;
 }
@@ -1063,7 +1164,7 @@ Double_t AliCascadeResult::GetMass () const
 TString AliCascadeResult::GetParticleName () const
 //Get particle name
 {
-    TString lName = ""; 
+    TString lName = "";
     if( fMassHypo == AliCascadeResult::kXiMinus      ) lName = "XiMinus";
     if( fMassHypo == AliCascadeResult::kXiPlus       ) lName = "XiPlus";
     if( fMassHypo == AliCascadeResult::kOmegaMinus   ) lName = "OmegaMinus";
@@ -1114,16 +1215,16 @@ void AliCascadeResult::InitializeHisto ()
         
         for( Long_t ibound = 0; ibound<fhNMassBins+1; ibound++) lMassBins[ibound] = fhMinMass + ( ( (Double_t) ibound )*lMassDelta );
         /*
-        cout<<"Centrality binning: "<<flush;
-        for( Long_t ibound = 0; ibound<fhNCentBounds; ibound++) cout<<fhCentBins[ibound]<<" "<<flush;
-        cout<<endl;
-        cout<<"Pt binning: "<<flush;
-        for( Long_t ibound = 0; ibound<fhNPtBounds; ibound++) cout<<fhPtBins[ibound]<<" "<<flush;
-        cout<<endl;
-        cout<<"Mass binning: "<<flush;
-        for( Long_t ibound = 0; ibound<fhNMassBins+1; ibound++) cout<<lMassBins[ibound]<<" "<<flush;
-        cout<<endl;
-        */
+         cout<<"Centrality binning: "<<flush;
+         for( Long_t ibound = 0; ibound<fhNCentBounds; ibound++) cout<<fhCentBins[ibound]<<" "<<flush;
+         cout<<endl;
+         cout<<"Pt binning: "<<flush;
+         for( Long_t ibound = 0; ibound<fhNPtBounds; ibound++) cout<<fhPtBins[ibound]<<" "<<flush;
+         cout<<endl;
+         cout<<"Mass binning: "<<flush;
+         for( Long_t ibound = 0; ibound<fhNMassBins+1; ibound++) cout<<lMassBins[ibound]<<" "<<flush;
+         cout<<endl;
+         */
         //Main output histogram: Centrality, mass, transverse momentum: Variable binning
         fHisto = new TH3F(Form("fHisto_%s",GetName()),"", fhNCentBounds-1, fhCentBins, fhNPtBounds-1, fhPtBins, fhNMassBins, lMassBins );
         fHisto->Sumw2();

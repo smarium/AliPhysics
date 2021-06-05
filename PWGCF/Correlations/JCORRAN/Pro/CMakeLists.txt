@@ -36,6 +36,7 @@ include_directories(${ROOT_INCLUDE_DIRS}
 # Sources - alphabetical order
 set(SRCS
 	AliBSDiJetTask.cxx
+	AliAnalysisTaskBSEmbedding.cxx
 	AliJDiJetAnalysis.cxx
 	AliJDiJetTask.cxx
 	AliJEbECORRTask.cxx
@@ -48,12 +49,20 @@ set(SRCS
 	AliJJetJtAnalysis.cxx
 	AliJJetJtTask.cxx
 	AliJJetTask.cxx
+	AliAnalysisTaskGenMCRidge.cxx
+	AliAnalysisTaskRidge.cxx
+	AliJPtHardXection.cxx
+	AliJJetQAAna.cxx
+	AliJJetQATask.cxx
 )
 
 if(FASTJET_FOUND)
     set(SRCS ${SRCS}
         AliJCDijetHistos.cxx
         AliJCDijetTask.cxx
+        AliJCDijetAna.cxx
+        AliAnalysisTaskEmcalJetDijetMass.cxx
+        AliJFJTask.cxx
         )
     include_directories(SYSTEM ${FASTJET_INCLUDE_DIR})
     link_directories(${FASTJET_LIBS_DIR})
@@ -70,7 +79,7 @@ get_directory_property(incdirs INCLUDE_DIRECTORIES)
 generate_dictionary("${MODULE}" "${MODULE}LinkDef.h" "${HDRS}" "${incdirs}" "${FASTJET_ROOTDICT_OPTS}")
 
 set(ROOT_DEPENDENCIES)
-set(ALIROOT_DEPENDENCIES ANALYSISalice CORRFW EMCALUtils PHOSUtils PWGJETFW PWGCFCorrelationsJCORRAN)
+set(ALIROOT_DEPENDENCIES ANALYSISalice CORRFW  EMCALUtils PHOSUtils PWGJETFW PWGCFCorrelationsJCORRAN)
 
 # Generate the ROOT map
 # Dependecies
@@ -97,7 +106,7 @@ add_library(${MODULE}-object OBJECT ${SRCS} G__${MODULE}.cxx)
 
 # Add a library to the project using the object
 add_library_tested(${MODULE} SHARED $<TARGET_OBJECTS:${MODULE}-object>)
-target_link_libraries(${MODULE} ${ALIROOT_DEPENDENCIES} ${ROOT_DEPENDENCIES})
+target_link_libraries(${MODULE} ${LIBDEPS})
 
 # Setting the correct headers for the object as gathered from the dependencies
 target_include_directories(${MODULE}-object PUBLIC $<TARGET_PROPERTY:${MODULE},INCLUDE_DIRECTORIES>)
